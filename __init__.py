@@ -14,18 +14,18 @@ WEB_DIRECTORY = "./web"
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
-# ‼️ Changed: Get the actual output directory from ComfyUI configuration
+
 MEDIA_FOLDER = folder_paths.get_output_directory()
 SAVED_FOLDER_NAME = "Saved"
 
-# ‼️ Changed: Define the router based on the existing ComfyUI server
+
 routes = PromptServer.instance.app.router
 
 # ----------------------------------------------------------------------------
 # Route Handlers
 # ----------------------------------------------------------------------------
 
-# ‼️ Changed: Removed decorators (@routes.get) as they don't exist in aiohttp.
+
 # Routes are registered manually at the bottom of the file.
 
 
@@ -233,7 +233,7 @@ async def get_metadata(request):
         return web.json_response({"found": False, "message": str(e)})
 
 
-# ‼️ Changed: Manually add routes here (aiohttp style) instead of using decorators
+
 routes.add_get("/plucker/view", serve_index)
 routes.add_static("/plucker/files", MEDIA_FOLDER)
 routes.add_get("/plucker/media-list", media_list)

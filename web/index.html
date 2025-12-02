@@ -235,7 +235,7 @@
           const ext = file.split(".").pop().toLowerCase();
           let media;
 
-          // ‼️ Changed: URL path adjusted to match __init__.py static route
+
           const mediaUrl = `/plucker/files/${file}`;
 
           if (ext === "mp4") {
@@ -267,7 +267,7 @@
           icon.onclick = (e) => {
             e.stopPropagation();
             if (confirm(`Delete "${item.name}"?`)) {
-              // ‼️ Changed: Fetch URL prefix
+
               fetch(
                 `/plucker/delete?filename=${encodeURIComponent(item.path)}`,
                 {
@@ -297,7 +297,7 @@
             const originalText = saveIcon.innerHTML;
             saveIcon.innerHTML = "⏳";
 
-            // ‼️ Changed: Fetch URL prefix
+
             fetch(`/plucker/save?filename=${encodeURIComponent(item.path)}`, {
               method: "POST",
             })
@@ -354,7 +354,7 @@
       function copyMetadata(filepath, key, iconElem, defaultIcon) {
         iconElem.innerHTML = "⏳";
 
-        // ‼️ Changed: Fetch URL prefix
+
         let url = `/plucker/metadata?filename=${encodeURIComponent(filepath)}`;
         if (key) {
           url += `&key=${key}`;
@@ -410,7 +410,7 @@
       function loadPage(displayPageNumber) {
         const zeroIndexedPage = displayPageNumber - 1;
 
-        // ‼️ Changed: Fetch URL prefix
+
         const url = `/plucker/media-list?subdir=${encodeURIComponent(currentPath)}&offset=${zeroIndexedPage * pageSize}&limit=${pageSize}`;
 
         fetch(url)

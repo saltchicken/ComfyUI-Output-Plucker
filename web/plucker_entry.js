@@ -3,7 +3,7 @@ import { app } from "../../scripts/app.js";
 app.registerExtension({
   name: "Comfy.OutputPlucker",
   setup() {
-    // ‼️ Changed: Immediately add the floating button, skipping menu checks
+
     addFloatingButton();
   },
 });
@@ -20,7 +20,7 @@ function addFloatingButton() {
     right: "140px", // Next to the settings/queue buttons usually
     zIndex: "9000",
     backgroundColor: "#2a2a2a",
-    color: "var(--p-100, #ffcc00)", // ‼️ Use ComfyUI variable if avail, else fallback
+    color: "var(--p-100, #ffcc00)",
     border: "1px solid #444",
     borderRadius: "4px",
     padding: "4px 10px",
@@ -30,7 +30,7 @@ function addFloatingButton() {
     fontSize: "14px"
   });
 
-  // ‼️ Hover effect for better visibility
+
   btn.onmouseenter = () => btn.style.backgroundColor = "#444";
   btn.onmouseleave = () => btn.style.backgroundColor = "#2a2a2a";
 
