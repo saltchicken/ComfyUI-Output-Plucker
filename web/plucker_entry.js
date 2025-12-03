@@ -3,7 +3,6 @@ import { app } from "../../scripts/app.js";
 app.registerExtension({
   name: "Comfy.OutputPlucker",
   setup() {
-
     addFloatingButton();
   },
 });
@@ -27,12 +26,11 @@ function addFloatingButton() {
     cursor: "pointer",
     fontWeight: "bold",
     boxShadow: "0 2px 5px rgba(0,0,0,0.5)",
-    fontSize: "14px"
+    fontSize: "14px",
   });
 
-
-  btn.onmouseenter = () => btn.style.backgroundColor = "#444";
-  btn.onmouseleave = () => btn.style.backgroundColor = "#2a2a2a";
+  btn.onmouseenter = () => (btn.style.backgroundColor = "#444");
+  btn.onmouseleave = () => (btn.style.backgroundColor = "#2a2a2a");
 
   btn.onclick = () => showPluckerModal();
   document.body.appendChild(btn);
@@ -69,6 +67,10 @@ function showPluckerModal() {
     boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
     overflow: "hidden",
     border: "1px solid #444",
+
+    position: "relative",
+    minWidth: "400px",
+    minHeight: "300px",
   });
 
   const header = document.createElement("div");
@@ -111,8 +113,58 @@ function showPluckerModal() {
     backgroundColor: "#1e1e1e",
   });
 
+
+  const resizer = document.createElement("div");
+  Object.assign(resizer.style, {
+    width: "20px",
+    height: "20px",
+    position: "absolute",
+    right: "0",
+    bottom: "0",
+    cursor: "nwse-resize",
+    zIndex: "20",
+    background: "linear-gradient(135deg, transparent 50%, #666 50%)", // Visual grip indicator
+  });
+
+
+  let isResizing = false;
+  let startX, startY, startW, startH;
+
+  resizer.onmousedown = (e) => {
+    e.stopPropagation(); // Prevent modal click events
+    isResizing = true;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    const rect = content.getBoundingClientRect();
+    startW = rect.width;
+    startH = rect.height;
+
+    // IMPORTANT: Disable iframe pointer events while dragging so it doesn't swallow mouse moves
+    iframe.style.pointerEvents = "none";
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
+
+  function onMouseMove(e) {
+    if (!isResizing) return;
+    const w = startW + (e.clientX - startX);
+    const h = startH + (e.clientY - startY);
+    content.style.width = `${w}px`;
+    content.style.height = `${h}px`;
+  }
+
+  function onMouseUp() {
+    isResizing = false;
+    iframe.style.pointerEvents = "auto"; // Re-enable iframe interaction
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+  }
+
   content.appendChild(header);
   content.appendChild(iframe);
+  content.appendChild(resizer);
   modal.appendChild(content);
   document.body.appendChild(modal);
 
