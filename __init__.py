@@ -51,16 +51,35 @@ async def media_list(request):
 
     try:
         items = []
+        # ‼️ Store files first to check for pairs later
+        all_entries = []
+        mp4_files = set()
+
         with os.scandir(target_dir) as entries:
             for entry in entries:
-                if entry.is_dir():
-                    rel_path = os.path.relpath(entry.path, MEDIA_FOLDER)
-                    items.append({"type": "dir", "name": entry.name, "path": rel_path})
-                elif entry.is_file() and entry.name.lower().endswith(
-                    (".gif", ".mp4", ".png", ".jpg", ".jpeg", ".webp")
-                ):
-                    rel_path = os.path.relpath(entry.path, MEDIA_FOLDER)
-                    items.append({"type": "file", "name": entry.name, "path": rel_path})
+                all_entries.append(entry)
+                # ‼️ Track MP4 files to filter their shadow PNGs
+                if entry.is_file() and entry.name.lower().endswith(".mp4"):
+                    mp4_files.add(entry.name)
+
+        # ‼️ Sort entries so we process them deterministically if needed
+        # We process the list we captured
+        for entry in all_entries:
+            if entry.is_dir():
+                rel_path = os.path.relpath(entry.path, MEDIA_FOLDER)
+                items.append({"type": "dir", "name": entry.name, "path": rel_path})
+            elif entry.is_file() and entry.name.lower().endswith(
+                (".gif", ".mp4", ".png", ".jpg", ".jpeg", ".webp")
+            ):
+                # ‼️ Filter out PNG if a corresponding MP4 exists
+                if entry.name.lower().endswith(".png"):
+                    base_name = os.path.splitext(entry.name)[0]
+                    # Check if base_name.mp4 exists in our set
+                    if f"{base_name}.mp4" in mp4_files:
+                        continue
+
+                rel_path = os.path.relpath(entry.path, MEDIA_FOLDER)
+                items.append({"type": "file", "name": entry.name, "path": rel_path})
 
         items.sort(key=lambda x: (x["type"] != "dir", x["name"].lower()))
 
@@ -88,8 +107,10 @@ async def delete_file(request):
         if os.path.exists(safe_path):
             os.remove(safe_path)
 
-        if filename.lower().endswith(".gif"):
-            png_path = safe_path.replace(".gif", ".png")
+        # ‼️ Also delete sidecar PNG for .mp4 files (in addition to .gif)
+        if filename.lower().endswith((".gif", ".mp4")):
+            base_path = os.path.splitext(safe_path)[0]
+            png_path = f"{base_path}.png"
             if os.path.exists(png_path):
                 os.remove(png_path)
 
@@ -125,10 +146,15 @@ async def save_file(request):
 
     try:
         shutil.copy2(source_path, dest_path)
-        if filename.lower().endswith(".gif"):
-            png_source = source_path.replace(".gif", ".png")
+
+        # ‼️ Handle sidecar PNGs for .mp4 (and .gif)
+        if filename.lower().endswith((".gif", ".mp4")):
+            source_base = os.path.splitext(source_path)[0]
+            png_source = f"{source_base}.png"
+
             if os.path.exists(png_source):
-                dest_png_path = dest_path.replace(".gif", ".png")
+                dest_base = os.path.splitext(dest_path)[0]
+                dest_png_path = f"{dest_base}.png"
                 shutil.copy2(png_source, dest_png_path)
 
         return web.json_response(
@@ -147,11 +173,21 @@ async def get_metadata(request):
     if not safe_path.startswith(os.path.abspath(MEDIA_FOLDER)):
         return web.json_response({"error": "Invalid file path"}, status=400)
 
-    if not os.path.exists(safe_path):
+    # ‼️ Logic to redirect MP4 metadata requests to the sidecar PNG
+    target_path = safe_path
+    if filename.lower().endswith(".mp4"):
+        base_path = os.path.splitext(safe_path)[0]
+        png_path = f"{base_path}.png"
+        if os.path.exists(png_path):
+            target_path = png_path
+        # If no PNG exists, we fall through. Image.open might fail on MP4
+        # or return no metadata, which is handled in the try/except block.
+
+    if not os.path.exists(target_path):
         return web.json_response({"error": "File not found"}, status=404)
 
     try:
-        with Image.open(safe_path) as img:
+        with Image.open(target_path) as img:
             info = img.info
 
             if key == "prompt_text":
@@ -231,7 +267,6 @@ async def get_metadata(request):
 
     except Exception as e:
         return web.json_response({"found": False, "message": str(e)})
-
 
 
 routes.add_get("/plucker/view", serve_index)
