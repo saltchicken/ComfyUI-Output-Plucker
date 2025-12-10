@@ -51,18 +51,18 @@ async def media_list(request):
 
     try:
         items = []
-        # ‼️ Store files first to check for pairs later
+
         all_entries = []
         mp4_files = set()
 
         with os.scandir(target_dir) as entries:
             for entry in entries:
                 all_entries.append(entry)
-                # ‼️ Track MP4 files to filter their shadow PNGs
+
                 if entry.is_file() and entry.name.lower().endswith(".mp4"):
                     mp4_files.add(entry.name)
 
-        # ‼️ Sort entries so we process them deterministically if needed
+
         # We process the list we captured
         for entry in all_entries:
             if entry.is_dir():
@@ -71,7 +71,7 @@ async def media_list(request):
             elif entry.is_file() and entry.name.lower().endswith(
                 (".gif", ".mp4", ".png", ".jpg", ".jpeg", ".webp")
             ):
-                # ‼️ Filter out PNG if a corresponding MP4 exists
+
                 if entry.name.lower().endswith(".png"):
                     base_name = os.path.splitext(entry.name)[0]
                     # Check if base_name.mp4 exists in our set
@@ -107,7 +107,7 @@ async def delete_file(request):
         if os.path.exists(safe_path):
             os.remove(safe_path)
 
-        # ‼️ Also delete sidecar PNG for .mp4 files (in addition to .gif)
+
         if filename.lower().endswith((".gif", ".mp4")):
             base_path = os.path.splitext(safe_path)[0]
             png_path = f"{base_path}.png"
@@ -147,7 +147,7 @@ async def save_file(request):
     try:
         shutil.copy2(source_path, dest_path)
 
-        # ‼️ Handle sidecar PNGs for .mp4 (and .gif)
+
         if filename.lower().endswith((".gif", ".mp4")):
             source_base = os.path.splitext(source_path)[0]
             png_source = f"{source_base}.png"
@@ -173,7 +173,7 @@ async def get_metadata(request):
     if not safe_path.startswith(os.path.abspath(MEDIA_FOLDER)):
         return web.json_response({"error": "Invalid file path"}, status=400)
 
-    # ‼️ Logic to redirect MP4 metadata requests to the sidecar PNG
+
     target_path = safe_path
     if filename.lower().endswith(".mp4"):
         base_path = os.path.splitext(safe_path)[0]
