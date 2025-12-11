@@ -98,6 +98,10 @@
         color: #ff9800; /* Orangeish */
       }
 
+      .path-icon {
+        color: #9c27b0; /* Purple */
+      }
+
       .file-label {
         position: absolute;
         bottom: 0;
@@ -235,7 +239,6 @@
           const ext = file.split(".").pop().toLowerCase();
           let media;
 
-
           const mediaUrl = `/plucker/files/${file}`;
 
           if (ext === "mp4") {
@@ -267,7 +270,6 @@
           icon.onclick = (e) => {
             e.stopPropagation();
             if (confirm(`Delete "${item.name}"?`)) {
-
               fetch(
                 `/plucker/delete?filename=${encodeURIComponent(item.path)}`,
                 {
@@ -296,7 +298,6 @@
             e.stopPropagation();
             const originalText = saveIcon.innerHTML;
             saveIcon.innerHTML = "⏳";
-
 
             fetch(`/plucker/save?filename=${encodeURIComponent(item.path)}`, {
               method: "POST",
@@ -338,6 +339,29 @@
           };
           actionBar.appendChild(promptIcon);
 
+          const pathIcon = document.createElement("div");
+          pathIcon.className = "action-btn path-icon";
+          pathIcon.innerHTML = "🔗";
+          pathIcon.title = "Copy full file path";
+          pathIcon.onclick = (e) => {
+            e.stopPropagation();
+            const originalIcon = "🔗";
+            pathIcon.innerHTML = "⏳";
+
+            navigator.clipboard
+              .writeText(item.fullpath)
+              .then(() => {
+                pathIcon.innerHTML = "✅";
+                setTimeout(() => (pathIcon.innerHTML = originalIcon), 1500);
+              })
+              .catch((err) => {
+                console.error("Clipboard error", err);
+                pathIcon.innerHTML = "❌";
+                setTimeout(() => (pathIcon.innerHTML = originalIcon), 1500);
+              });
+          };
+          actionBar.appendChild(pathIcon);
+
           wrapper.appendChild(actionBar);
           observer.observe(wrapper);
         }
@@ -353,7 +377,6 @@
 
       function copyMetadata(filepath, key, iconElem, defaultIcon) {
         iconElem.innerHTML = "⏳";
-
 
         let url = `/plucker/metadata?filename=${encodeURIComponent(filepath)}`;
         if (key) {
@@ -410,7 +433,6 @@
       function loadPage(displayPageNumber) {
         const zeroIndexedPage = displayPageNumber - 1;
 
-
         const url = `/plucker/media-list?subdir=${encodeURIComponent(currentPath)}&offset=${zeroIndexedPage * pageSize}&limit=${pageSize}`;
 
         fetch(url)
@@ -459,3 +481,4 @@
     </script>
   </body>
 </html>
+

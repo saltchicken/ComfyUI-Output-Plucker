@@ -62,16 +62,22 @@ async def media_list(request):
                 if entry.is_file() and entry.name.lower().endswith(".mp4"):
                     mp4_files.add(entry.name)
 
-
         # We process the list we captured
         for entry in all_entries:
             if entry.is_dir():
                 rel_path = os.path.relpath(entry.path, MEDIA_FOLDER)
-                items.append({"type": "dir", "name": entry.name, "path": rel_path})
+
+                items.append(
+                    {
+                        "type": "dir",
+                        "name": entry.name,
+                        "path": rel_path,
+                        "fullpath": entry.path,
+                    }
+                )
             elif entry.is_file() and entry.name.lower().endswith(
                 (".gif", ".mp4", ".png", ".jpg", ".jpeg", ".webp")
             ):
-
                 if entry.name.lower().endswith(".png"):
                     base_name = os.path.splitext(entry.name)[0]
                     # Check if base_name.mp4 exists in our set
@@ -79,7 +85,15 @@ async def media_list(request):
                         continue
 
                 rel_path = os.path.relpath(entry.path, MEDIA_FOLDER)
-                items.append({"type": "file", "name": entry.name, "path": rel_path})
+
+                items.append(
+                    {
+                        "type": "file",
+                        "name": entry.name,
+                        "path": rel_path,
+                        "fullpath": entry.path,
+                    }
+                )
 
         items.sort(key=lambda x: (x["type"] != "dir", x["name"].lower()))
 
@@ -106,7 +120,6 @@ async def delete_file(request):
     try:
         if os.path.exists(safe_path):
             os.remove(safe_path)
-
 
         if filename.lower().endswith((".gif", ".mp4")):
             base_path = os.path.splitext(safe_path)[0]
@@ -147,7 +160,6 @@ async def save_file(request):
     try:
         shutil.copy2(source_path, dest_path)
 
-
         if filename.lower().endswith((".gif", ".mp4")):
             source_base = os.path.splitext(source_path)[0]
             png_source = f"{source_base}.png"
@@ -172,7 +184,6 @@ async def get_metadata(request):
 
     if not safe_path.startswith(os.path.abspath(MEDIA_FOLDER)):
         return web.json_response({"error": "Invalid file path"}, status=400)
-
 
     target_path = safe_path
     if filename.lower().endswith(".mp4"):
@@ -276,4 +287,4 @@ routes.add_delete("/plucker/delete", delete_file)
 routes.add_post("/plucker/save", save_file)
 routes.add_get("/plucker/metadata", get_metadata)
 
-print("‼️ ComfyUI-Output-Plucker Loaded")
+print("‼️ ComfyUI-Output-Plucker Loaded!")
