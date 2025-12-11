@@ -187,6 +187,50 @@
 
       let currentPath = "";
 
+      // ‼️ CHANGE: Robust Clipboard Copy Function
+      // This attempts the modern API first, then falls back to legacy execCommand
+      // to support non-secure contexts (HTTP on LAN).
+      async function copyToClipboard(text) {
+        // 1. Try modern Clipboard API (Works on localhost/HTTPS)
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try {
+            await navigator.clipboard.writeText(text);
+            return true;
+          } catch (err) {
+            console.warn(
+              "Clipboard API failed (likely HTTP), trying fallback...",
+              err,
+            );
+          }
+        }
+
+        // 2. Fallback: Create hidden textarea and use execCommand
+        try {
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+
+          // Ensure it's part of the DOM but invisible/unobtrusive
+          textArea.style.position = "fixed";
+          textArea.style.left = "-9999px";
+          textArea.style.top = "0";
+          textArea.style.opacity = "0";
+
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+
+          const successful = document.execCommand("copy");
+          document.body.removeChild(textArea);
+
+          if (successful) return true;
+          else throw new Error("execCommand returned false");
+        } catch (err) {
+          console.error("All copy methods failed:", err);
+          alert("Clipboard access denied. Check console for details.");
+          return false;
+        }
+      }
+
       const observer = new IntersectionObserver(
         (entries, obs) => {
           entries.forEach((entry) => {
@@ -248,7 +292,6 @@
             media.loop = true;
             media.width = 400;
             media.dataset.src = mediaUrl;
-            // You can add a placeholder image here if you want
           } else {
             media = document.createElement("img");
             media.dataset.src = mediaUrl;
@@ -343,22 +386,22 @@
           pathIcon.className = "action-btn path-icon";
           pathIcon.innerHTML = "🔗";
           pathIcon.title = "Copy full file path";
+
+          // ‼️ CHANGE: Updated Path Click Handler to use new copy helper
           pathIcon.onclick = (e) => {
             e.stopPropagation();
             const originalIcon = "🔗";
             pathIcon.innerHTML = "⏳";
 
-            navigator.clipboard
-              .writeText(item.fullpath)
-              .then(() => {
+            copyToClipboard(item.fullpath).then((success) => {
+              if (success) {
                 pathIcon.innerHTML = "✅";
                 setTimeout(() => (pathIcon.innerHTML = originalIcon), 1500);
-              })
-              .catch((err) => {
-                console.error("Clipboard error", err);
+              } else {
                 pathIcon.innerHTML = "❌";
                 setTimeout(() => (pathIcon.innerHTML = originalIcon), 1500);
-              });
+              }
+            });
           };
           actionBar.appendChild(pathIcon);
 
@@ -392,16 +435,16 @@
                   ? JSON.stringify(data.metadata, null, 2)
                   : data.metadata;
 
-              navigator.clipboard
-                .writeText(textToCopy)
-                .then(() => {
+              // ‼️ CHANGE: Use new copy helper
+              copyToClipboard(textToCopy).then((success) => {
+                if (success) {
                   iconElem.innerHTML = "✅";
                   setTimeout(() => (iconElem.innerHTML = defaultIcon), 1500);
-                })
-                .catch((err) => {
-                  console.error("Clipboard error", err);
+                } else {
                   iconElem.innerHTML = "⚠️";
-                });
+                  setTimeout(() => (iconElem.innerHTML = defaultIcon), 1500);
+                }
+              });
             } else {
               console.warn(data.message);
               iconElem.innerHTML = "🚫";
@@ -481,4 +524,3 @@
     </script>
   </body>
 </html>
-
