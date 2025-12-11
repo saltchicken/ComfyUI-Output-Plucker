@@ -15,18 +15,58 @@ NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
 
-MEDIA_FOLDER = folder_paths.get_output_directory()
+# We get the standard output and input directories from ComfyUI
+OUTPUT_DIR = folder_paths.get_output_directory()
+INPUT_DIR = folder_paths.get_input_directory()
+
+
+ROOT_FOLDERS = {"Output": OUTPUT_DIR, "Input": INPUT_DIR}
+
 SAVED_FOLDER_NAME = "Saved"
 
 
 routes = PromptServer.instance.app.router
 
 # ----------------------------------------------------------------------------
-# Route Handlers
+# Helper: Parse Virtual Path
 # ----------------------------------------------------------------------------
 
 
-# Routes are registered manually at the bottom of the file.
+def parse_virtual_path(vpath):
+    """
+    Converts a virtual path (e.g., "Output/subfolder/image.png")
+    into a real system path, preventing directory traversal.
+    """
+    if not vpath:
+        return None, None
+
+    # Standardize separators
+    parts = vpath.replace("\\", "/").split("/")
+    root_name = parts[0]
+
+    if root_name not in ROOT_FOLDERS:
+        return None, None
+
+    real_root = ROOT_FOLDERS[root_name]
+
+    if len(parts) > 1:
+        # Join the rest of the path
+        sub_path = os.path.join(*parts[1:])
+        full_path = os.path.abspath(os.path.join(real_root, sub_path))
+    else:
+        # Just the root folder itself
+        full_path = os.path.abspath(real_root)
+
+    # Security check: Ensure we haven't escaped the root
+    if not full_path.startswith(os.path.abspath(real_root)):
+        return None, None
+
+    return root_name, full_path
+
+
+# ----------------------------------------------------------------------------
+# Route Handlers
+# ----------------------------------------------------------------------------
 
 
 async def serve_index(request):
@@ -40,10 +80,28 @@ async def media_list(request):
     offset = int(params.get("offset", 0))
     limit = int(params.get("limit", 20))
 
-    base_dir = os.path.abspath(MEDIA_FOLDER)
-    target_dir = os.path.abspath(os.path.join(base_dir, subdir))
 
-    if not target_dir.startswith(base_dir):
+    if not subdir:
+        items = []
+        for key, val in ROOT_FOLDERS.items():
+            items.append(
+                {
+                    "type": "dir",
+                    "name": key,
+                    "path": key,  # This becomes the 'subdir' for the next request
+                    "fullpath": val,
+                }
+            )
+        # Sort roots alphabetically
+        items.sort(key=lambda x: x["name"])
+        return web.json_response(
+            {"total": len(items), "items": items, "current_path": ""}
+        )
+
+
+    root_name, target_dir = parse_virtual_path(subdir)
+
+    if not target_dir:
         return web.json_response({"error": "Invalid path"}, status=400)
 
     if not os.path.exists(target_dir):
@@ -51,27 +109,31 @@ async def media_list(request):
 
     try:
         items = []
-
         all_entries = []
         mp4_files = set()
 
         with os.scandir(target_dir) as entries:
             for entry in entries:
                 all_entries.append(entry)
-
                 if entry.is_file() and entry.name.lower().endswith(".mp4"):
                     mp4_files.add(entry.name)
 
-        # We process the list we captured
+        # Process entries
         for entry in all_entries:
-            if entry.is_dir():
-                rel_path = os.path.relpath(entry.path, MEDIA_FOLDER)
 
+            # Real path relative to the physical root (e.g. "subfolder/image.png")
+            rel_real = os.path.relpath(entry.path, ROOT_FOLDERS[root_name])
+
+            # Virtual path for frontend (e.g. "Output/subfolder/image.png")
+            # We force forward slashes for web consistency
+            virtual_path = f"{root_name}/{rel_real}".replace("\\", "/")
+
+            if entry.is_dir():
                 items.append(
                     {
                         "type": "dir",
                         "name": entry.name,
-                        "path": rel_path,
+                        "path": virtual_path,
                         "fullpath": entry.path,
                     }
                 )
@@ -80,17 +142,14 @@ async def media_list(request):
             ):
                 if entry.name.lower().endswith(".png"):
                     base_name = os.path.splitext(entry.name)[0]
-                    # Check if base_name.mp4 exists in our set
                     if f"{base_name}.mp4" in mp4_files:
                         continue
-
-                rel_path = os.path.relpath(entry.path, MEDIA_FOLDER)
 
                 items.append(
                     {
                         "type": "file",
                         "name": entry.name,
-                        "path": rel_path,
+                        "path": virtual_path,
                         "fullpath": entry.path,
                     }
                 )
@@ -112,9 +171,10 @@ async def delete_file(request):
     if not filename:
         return web.json_response({"error": "Missing filename"}, status=400)
 
-    safe_path = os.path.normpath(os.path.join(MEDIA_FOLDER, filename))
 
-    if not safe_path.startswith(os.path.abspath(MEDIA_FOLDER)):
+    root_name, safe_path = parse_virtual_path(filename)
+
+    if not safe_path:
         return web.json_response({"error": "Invalid file path"}, status=400)
 
     try:
@@ -137,15 +197,18 @@ async def delete_file(request):
 async def save_file(request):
     filename = request.rel_url.query.get("filename")
 
-    source_path = os.path.normpath(os.path.join(MEDIA_FOLDER, filename))
 
-    if not source_path.startswith(os.path.abspath(MEDIA_FOLDER)):
+    root_name, source_path = parse_virtual_path(filename)
+
+    if not source_path:
         return web.json_response({"error": "Invalid file path"}, status=400)
 
     if not os.path.exists(source_path):
         return web.json_response({"error": "File not found"}, status=404)
 
-    saved_dir = os.path.join(MEDIA_FOLDER, SAVED_FOLDER_NAME)
+
+    # regardless of whether source came from Input or Output
+    saved_dir = os.path.join(OUTPUT_DIR, SAVED_FOLDER_NAME)
     os.makedirs(saved_dir, exist_ok=True)
 
     base_name = os.path.basename(filename)
@@ -170,7 +233,7 @@ async def save_file(request):
                 shutil.copy2(png_source, dest_png_path)
 
         return web.json_response(
-            {"message": f"Saved to {os.path.relpath(dest_path, MEDIA_FOLDER)}"}
+            {"message": f"Saved to {os.path.relpath(dest_path, OUTPUT_DIR)}"}
         )
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
@@ -180,9 +243,10 @@ async def get_metadata(request):
     filename = request.rel_url.query.get("filename")
     key = request.rel_url.query.get("key")
 
-    safe_path = os.path.normpath(os.path.join(MEDIA_FOLDER, filename))
 
-    if not safe_path.startswith(os.path.abspath(MEDIA_FOLDER)):
+    root_name, safe_path = parse_virtual_path(filename)
+
+    if not safe_path:
         return web.json_response({"error": "Invalid file path"}, status=400)
 
     target_path = safe_path
@@ -191,8 +255,6 @@ async def get_metadata(request):
         png_path = f"{base_path}.png"
         if os.path.exists(png_path):
             target_path = png_path
-        # If no PNG exists, we fall through. Image.open might fail on MP4
-        # or return no metadata, which is handled in the try/except block.
 
     if not os.path.exists(target_path):
         return web.json_response({"error": "File not found"}, status=404)
@@ -280,11 +342,17 @@ async def get_metadata(request):
         return web.json_response({"found": False, "message": str(e)})
 
 
+
 routes.add_get("/plucker/view", serve_index)
-routes.add_static("/plucker/files", MEDIA_FOLDER)
+
+
+# Frontend requests /plucker/files/Output/... or /plucker/files/Input/...
+routes.add_static("/plucker/files/Output", OUTPUT_DIR)
+routes.add_static("/plucker/files/Input", INPUT_DIR)
+
 routes.add_get("/plucker/media-list", media_list)
 routes.add_delete("/plucker/delete", delete_file)
 routes.add_post("/plucker/save", save_file)
 routes.add_get("/plucker/metadata", get_metadata)
 
-print("‼️ ComfyUI-Output-Plucker Loaded!")
+print("‼️ ComfyUI-Output-Plucker Loaded with Input Support!")
