@@ -9,50 +9,181 @@
         color: #f0f0f0;
         font-family: sans-serif;
         margin: 0;
-        padding: 20px;
-      }
-      .gif-wrapper {
-        position: relative;
-        display: inline-block;
-        margin: 10px;
-        vertical-align: top;
-        width: 400px;
-        min-height: 200px;
-        background: #2a2a2a;
-        border-radius: 8px;
-      }
-      .gif-wrapper img,
-      .gif-wrapper video {
-        max-width: 100%;
-        display: block;
-        cursor: pointer;
-        border-radius: 8px;
-      }
-      .folder-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 200px;
-        cursor: pointer;
-        color: #ffcc00;
-      }
-      .folder-icon-svg {
-        font-size: 80px;
+        padding: 0;
+        height: 100vh;
+        overflow: hidden;
       }
 
+      .app-container {
+        display: flex;
+        height: 100%;
+        width: 100%;
+      }
+
+      .sidebar {
+        width: 240px;
+        background-color: #252525;
+        border-right: 1px solid #333;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+      }
+
+      .sidebar-header {
+        padding: 15px;
+        border-bottom: 1px solid #333;
+        background-color: #2a2a2a;
+      }
+
+      .root-select {
+        width: 100%;
+        padding: 8px;
+        background-color: #333;
+        color: #fff;
+        border: 1px solid #444;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .folder-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+      }
+
+      .folder-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 10px;
+        cursor: pointer;
+        border-radius: 4px;
+        color: #ccc;
+        margin-bottom: 2px;
+        transition: background 0.2s;
+        font-size: 14px;
+      }
+
+      .folder-item:hover {
+        background-color: #3a3a3a;
+        color: #fff;
+      }
+
+      .folder-icon {
+        margin-right: 8px;
+        font-size: 16px;
+      }
+
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0; /* Fix flex child overflow issues */
+      }
+
+      .top-bar {
+        padding: 10px 20px;
+        background-color: #2a2a2a;
+        border-bottom: 1px solid #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .breadcrumbs {
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        color: #888;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      .breadcrumb-item {
+        cursor: pointer;
+        color: #88ccff;
+        margin: 0 5px;
+      }
+
+      .breadcrumb-item:hover {
+        text-decoration: underline;
+      }
+
+      .breadcrumb-separator {
+        color: #555;
+      }
+
+      .controls {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+      }
+
+      .controls button,
+      .controls select {
+        padding: 6px 12px;
+        font-size: 13px;
+        background: #444;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .controls button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      .grid-scroll-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+      }
+
+      #gif-container {
+        /* Grid layout for images */
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-content: flex-start;
+      }
+
+      .gif-wrapper {
+        position: relative;
+        width: calc(33.33% - 10px); /* Responsive 3 column */
+        min-width: 250px;
+        background: #2a2a2a;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      }
+
+      .gif-wrapper img,
+      .gif-wrapper video {
+        width: 100%;
+        height: auto;
+        display: block;
+        cursor: pointer;
+        /* aspect-ratio: 1;  Optional: forces square grid */
+        object-fit: contain;
+        background: #000;
+        min-height: 150px;
+      }
+
+      /* Action overlay styles (kept from original) */
       .delete-icon {
         position: absolute;
         top: 5px;
         right: 5px;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.6);
         color: white;
-        font-size: 18px;
-        padding: 4px;
+        font-size: 16px;
+        padding: 5px;
         border-radius: 4px;
         cursor: pointer;
         display: none;
-        user-select: none;
         z-index: 10;
       }
       .gif-wrapper:hover .delete-icon {
@@ -64,42 +195,37 @@
         top: 5px;
         left: 5px;
         display: flex;
-        gap: 5px; /* Space between buttons */
+        gap: 5px;
         z-index: 10;
       }
 
       .action-btn {
-        background: rgba(0, 0, 0, 0.5);
-        font-size: 18px;
-        padding: 4px;
+        background: rgba(0, 0, 0, 0.6);
+        font-size: 16px;
+        padding: 5px;
         border-radius: 4px;
         cursor: pointer;
-        display: none; /* Hidden by default */
-        user-select: none;
+        display: none;
         width: 24px;
         height: 24px;
         text-align: center;
         line-height: 24px;
       }
-
       .gif-wrapper:hover .action-btn {
         display: block;
       }
 
       .save-icon {
-        color: #4caf50; /* Greenish */
+        color: #4caf50;
       }
-
       .meta-icon {
-        color: #2196f3; /* Blueish */
+        color: #2196f3;
       }
-
       .prompt-icon {
-        color: #ff9800; /* Orangeish */
+        color: #ff9800;
       }
-
       .path-icon {
-        color: #9c27b0; /* Purple */
+        color: #9c27b0;
       }
 
       .file-label {
@@ -107,177 +233,176 @@
         bottom: 0;
         left: 0;
         right: 0;
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(0, 0, 0, 0.8);
         color: #fff;
-        font-size: 12px;
-        padding: 4px;
+        font-size: 11px;
+        padding: 6px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        opacity: 0; /* Default hidden */
+        opacity: 0;
         transition: opacity 0.2s;
         pointer-events: none;
-        border-bottom-left-radius: 8px;
-        border-bottom-right-radius: 8px;
       }
-      .gif-wrapper:hover .file-label,
-      .folder-type .file-label {
+      .gif-wrapper:hover .file-label {
         opacity: 1;
       }
 
-      .controls,
-      .nav-bar {
-        margin: 20px auto;
+      .page-info {
+        font-size: 13px;
+        color: #aaa;
+        margin: 0 10px;
+      }
+
+      .empty-message {
+        width: 100%;
         text-align: center;
-      }
-      .controls button,
-      .nav-bar button {
-        padding: 10px 20px;
-        font-size: 16px;
-        margin: 0 5px;
-        background: #444;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-      }
-
-      .controls select {
-        padding: 10px;
-        font-size: 16px;
-        margin: 0 5px;
-        background: #444;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-      }
-
-      .controls button:disabled,
-      .nav-bar button:disabled {
-        opacity: 0.5;
-        cursor: default;
-      }
-      .page-info,
-      .path-info {
-        margin: 10px;
-        font-size: 16px;
-      }
-      .path-info {
-        color: #88ccff;
-        font-family: monospace;
+        color: #555;
+        margin-top: 50px;
+        font-style: italic;
       }
     </style>
   </head>
   <body>
-    <div class="nav-bar">
-      <button onclick="navigateUp()" id="up-btn">⬆ Up</button>
-      <span class="path-info" id="current-path-display">/</span>
+    <div class="app-container">
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <label
+            style="
+              font-size: 12px;
+              color: #888;
+              display: block;
+              margin-bottom: 5px;
+            "
+            >Source</label
+          >
+          <select id="root-select" class="root-select" onchange="changeRoot()">
+            <option value="" disabled selected>Loading...</option>
+          </select>
+        </div>
+        <div id="folder-list" class="folder-list">
+          <!-- Folders injected here -->
+        </div>
+      </div>
+
+      <div class="main-content">
+        <div class="top-bar">
+          <div id="breadcrumbs" class="breadcrumbs">
+            <!-- Breadcrumbs injected here -->
+          </div>
+
+          <div class="controls">
+            <button onclick="firstPage()">⏮</button>
+            <button onclick="prevPage()">⬅</button>
+            <span class="page-info" id="page-info">1 / 1</span>
+            <button onclick="nextPage()">➡</button>
+            <button onclick="lastPage()">⏭</button>
+
+            <select id="page-size-select" onchange="changePageSize()">
+              <option value="4">4</option>
+              <option value="6">6</option>
+              <option value="8">8</option>
+              <option value="10">10</option>
+              <option value="12" selected>12</option>
+              <option value="24">24</option>
+              <option value="48">48</option>
+              <option value="96">96</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="grid-scroll" class="grid-scroll-area">
+          <div id="gif-container"></div>
+        </div>
+      </div>
     </div>
-
-    <div class="controls">
-      <button onclick="firstPage()">⏮ First</button>
-      <button onclick="prevPage()">⬅ Prev</button>
-      <span class="page-info" id="page-info">Page 1</span>
-      <button onclick="nextPage()">Next ➡</button>
-      <button onclick="lastPage()">Last ⏭</button>
-
-
-      <select id="page-size-select" onchange="changePageSize()">
-        <option value="4">4 per page</option>
-        <option value="6">6 per page</option>
-        <option value="8">8 per page</option>
-        <option value="10">10 per page</option>
-        <option value="12" selected>12 per page</option>
-        <option value="24">24 per page</option>
-        <option value="48">48 per page</option>
-        <option value="96">96 per page</option>
-      </select>
-    </div>
-
-    <div id="gif-container"></div>
 
     <script>
       const container = document.getElementById("gif-container");
+      const folderList = document.getElementById("folder-list");
+      const rootSelect = document.getElementById("root-select");
+      const breadcrumbsContainer = document.getElementById("breadcrumbs");
       const pageInfo = document.getElementById("page-info");
-
-      const pathDisplay = document.getElementById("current-path-display");
-      const upBtn = document.getElementById("up-btn");
-
+      const gridScroll = document.getElementById("grid-scroll");
 
       let pageSize = 12;
-      let currentPage = 0;
+      let currentPage = 1;
       let totalItems = 0;
       let totalPages = 1;
 
       let currentPath = "";
+      let availableRoots = [];
 
+      async function init() {
+        try {
+          const res = await fetch(
+            `/plucker/media-list?subdir=&offset=0&limit=100`,
+          );
+          const data = await res.json();
+
+          // Populate Dropdown
+          rootSelect.innerHTML = "";
+          availableRoots = data.items.filter((i) => i.type === "dir");
+
+          availableRoots.forEach((root) => {
+            const opt = document.createElement("option");
+            opt.value = root.path;
+            opt.textContent = `📂 ${root.name}`;
+            rootSelect.appendChild(opt);
+          });
+
+          // Default to "Output" if available, else first item
+          const defaultRoot =
+            availableRoots.find((r) => r.name === "Output") ||
+            availableRoots[0];
+          if (defaultRoot) {
+            rootSelect.value = defaultRoot.path;
+            currentPath = defaultRoot.path;
+            loadPage(1);
+          }
+        } catch (e) {
+          console.error("Failed to init roots", e);
+        }
+      }
+
+      function changeRoot() {
+        currentPath = rootSelect.value;
+        currentPage = 1;
+        loadPage(1);
+      }
+
+      function isRoot(path) {
+        return availableRoots.some((r) => r.path === path);
+      }
 
       function changePageSize() {
         const select = document.getElementById("page-size-select");
         pageSize = parseInt(select.value, 10);
-        currentPage = 1; // Reset to first page to avoid out-of-bounds errors
+        currentPage = 1;
         loadPage(1);
       }
 
       async function copyToClipboard(text) {
-        // 1. Try modern Clipboard API (Works on localhost/HTTPS)
         if (navigator.clipboard && navigator.clipboard.writeText) {
           try {
             await navigator.clipboard.writeText(text);
             return true;
-          } catch (err) {
-            console.warn(
-              "Clipboard API failed (likely HTTP), trying fallback...",
-              err,
-            );
-          }
+          } catch (err) {}
         }
-
-        // 2. Fallback: Create hidden textarea and use execCommand
         try {
           const textArea = document.createElement("textarea");
           textArea.value = text;
-
-          // Ensure it's part of the DOM but invisible/unobtrusive
           textArea.style.position = "fixed";
           textArea.style.left = "-9999px";
-          textArea.style.top = "0";
-          textArea.style.opacity = "0";
-
           document.body.appendChild(textArea);
-          textArea.focus();
           textArea.select();
-
           const successful = document.execCommand("copy");
           document.body.removeChild(textArea);
-
-          if (successful) return true;
-          else throw new Error("execCommand returned false");
+          return successful;
         } catch (err) {
-          console.error("All copy methods failed:", err);
-          alert("Clipboard access denied. Check console for details.");
           return false;
         }
       }
-
-      const observer = new IntersectionObserver(
-        (entries, obs) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const media = entry.target.querySelector("img, video");
-              if (media && media.dataset.src) {
-                media.src = media.dataset.src;
-                obs.unobserve(entry.target);
-              }
-            }
-          });
-        },
-        {
-          rootMargin: "0px 0px 200px 0px",
-          threshold: 0.1,
-        },
-      );
 
       function toggleFullscreen(elem) {
         if (!document.fullscreenElement) {
@@ -287,156 +412,180 @@
         }
       }
 
-      function clearContainer() {
-        container.innerHTML = "";
+      function updateBreadcrumbs() {
+        breadcrumbsContainer.innerHTML = "";
+
+        if (!currentPath) return;
+
+        const parts = currentPath.split("/"); // e.g., ["Output", "Saved", "Batch1"]
+
+        let buildPath = "";
+
+        parts.forEach((part, index) => {
+          if (index > 0) {
+            const sep = document.createElement("span");
+            sep.className = "breadcrumb-separator";
+            sep.textContent = " › ";
+            breadcrumbsContainer.appendChild(sep);
+            buildPath += "/" + part;
+          } else {
+            buildPath = part;
+          }
+
+          const item = document.createElement("span");
+          item.className = "breadcrumb-item";
+
+          // Add icon for root
+          if (index === 0) item.textContent = "🏠 " + part;
+          else item.textContent = part;
+
+          // Click handler closure
+          const targetPath = buildPath;
+          item.onclick = () => {
+            currentPath = targetPath;
+            loadPage(1);
+          };
+
+          breadcrumbsContainer.appendChild(item);
+        });
       }
+
+      function renderItems(items) {
+        container.innerHTML = "";
+        folderList.innerHTML = "";
+
+        // Split items
+        const dirs = items.filter((i) => i.type === "dir");
+        const files = items.filter((i) => i.type !== "dir");
+
+        // 1. Render Sidebar Folders
+        if (dirs.length === 0) {
+          folderList.innerHTML =
+            '<div style="color: #555; font-style:italic; padding:10px; font-size:12px;">No subfolders</div>';
+        } else {
+          dirs.forEach((dir) => {
+            const div = document.createElement("div");
+            div.className = "folder-item";
+            div.innerHTML = `<span class="folder-icon">📁</span> ${dir.name}`;
+            div.onclick = () => {
+              currentPath = dir.path;
+              loadPage(1);
+            };
+            folderList.appendChild(div);
+          });
+        }
+
+        // 2. Render Main Grid Files
+        if (files.length === 0 && dirs.length === 0) {
+          container.innerHTML =
+            '<div class="empty-message">Empty Directory</div>';
+          return;
+        }
+
+        files.forEach((fileItem) => {
+          createGridItem(fileItem);
+        });
+
+        // Intersection observer for lazy loading images
+        document
+          .querySelectorAll(".lazy-load")
+          .forEach((img) => observer.observe(img));
+      }
+
+      const observer = new IntersectionObserver(
+        (entries, obs) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const media = entry.target;
+              if (media.dataset.src) {
+                media.src = media.dataset.src;
+                media.classList.remove("lazy-load");
+                obs.unobserve(media);
+              }
+            }
+          });
+        },
+        { root: gridScroll, rootMargin: "0px 0px 200px 0px", threshold: 0.1 },
+      );
 
       function createGridItem(item) {
         const wrapper = document.createElement("div");
         wrapper.className = "gif-wrapper";
 
-        if (item.type === "dir") {
-          wrapper.classList.add("folder-type");
+        const file = item.path;
+        const ext = file.split(".").pop().toLowerCase();
+        let media;
+        const mediaUrl = `/plucker/files/${file}`;
 
-          const folderContent = document.createElement("div");
-          folderContent.className = "folder-content";
-          folderContent.innerHTML = '<div class="folder-icon-svg">📁</div>';
-
-          // Click to navigate
-          folderContent.onclick = () => {
-            openFolder(item.path);
-          };
-
-          wrapper.appendChild(folderContent);
+        if (ext === "mp4") {
+          media = document.createElement("video");
+          media.autoplay = true;
+          media.muted = true;
+          media.loop = true;
+          media.dataset.src = mediaUrl;
+          media.className = "lazy-load";
         } else {
-          const file = item.path;
-          const ext = file.split(".").pop().toLowerCase();
-          let media;
-
-          const mediaUrl = `/plucker/files/${file}`;
-
-          if (ext === "mp4") {
-            media = document.createElement("video");
-            media.autoplay = true;
-            media.muted = true;
-            media.loop = true;
-            media.width = 400;
-            media.dataset.src = mediaUrl;
-          } else {
-            media = document.createElement("img");
-            media.dataset.src = mediaUrl;
-          }
-
-          media.alt = item.name;
-          media.ondblclick = (e) => {
-            e.stopPropagation();
-            toggleFullscreen(media);
-          };
-
-          wrapper.appendChild(media);
-
-          // Delete icon
-          const icon = document.createElement("div");
-          icon.className = "delete-icon";
-          icon.innerHTML = "🗑️";
-          icon.title = "Delete this file";
-          icon.onclick = (e) => {
-            e.stopPropagation();
-            if (confirm(`Delete "${item.name}"?`)) {
-              fetch(
-                `/plucker/delete?filename=${encodeURIComponent(item.path)}`,
-                {
-                  method: "DELETE",
-                },
-              ).then((res) => {
-                if (res.ok) {
-                  wrapper.remove();
-                } else {
-                  alert("Failed to delete.");
-                }
-              });
-            }
-          };
-          wrapper.appendChild(icon);
-
-          const actionBar = document.createElement("div");
-          actionBar.className = "action-bar-left";
-
-          // Save Icon
-          const saveIcon = document.createElement("div");
-          saveIcon.className = "action-btn save-icon";
-          saveIcon.innerHTML = "💾";
-          saveIcon.title = "Save to Saved folder";
-          saveIcon.onclick = (e) => {
-            e.stopPropagation();
-            const originalText = saveIcon.innerHTML;
-            saveIcon.innerHTML = "⏳";
-
-            fetch(`/plucker/save?filename=${encodeURIComponent(item.path)}`, {
-              method: "POST",
-            })
-              .then((res) => {
-                if (res.ok) {
-                  saveIcon.innerHTML = "✅";
-                  setTimeout(() => (saveIcon.innerHTML = "💾"), 1500);
-                } else {
-                  saveIcon.innerHTML = "❌";
-                  console.error("Save failed");
-                }
-              })
-              .catch((err) => {
-                saveIcon.innerHTML = "❌";
-                console.error(err);
-              });
-          };
-          actionBar.appendChild(saveIcon);
-
-          // Metadata Icon
-          const metaIcon = document.createElement("div");
-          metaIcon.className = "action-btn meta-icon";
-          metaIcon.innerHTML = "📋";
-          metaIcon.title = "Copy ComfyUI Workflow/Metadata";
-          metaIcon.onclick = (e) => {
-            e.stopPropagation();
-            copyMetadata(item.path, null, metaIcon, "📋");
-          };
-          actionBar.appendChild(metaIcon);
-
-          const promptIcon = document.createElement("div");
-          promptIcon.className = "action-btn prompt-icon";
-          promptIcon.innerHTML = "📝";
-          promptIcon.title = "Copy positive prompt text";
-          promptIcon.onclick = (e) => {
-            e.stopPropagation();
-            copyMetadata(item.path, "prompt_text", promptIcon, "📝");
-          };
-          actionBar.appendChild(promptIcon);
-
-          const pathIcon = document.createElement("div");
-          pathIcon.className = "action-btn path-icon";
-          pathIcon.innerHTML = "🔗";
-          pathIcon.title = "Copy full file path";
-
-          pathIcon.onclick = (e) => {
-            e.stopPropagation();
-            const originalIcon = "🔗";
-            pathIcon.innerHTML = "⏳";
-
-            copyToClipboard(item.fullpath).then((success) => {
-              if (success) {
-                pathIcon.innerHTML = "✅";
-                setTimeout(() => (pathIcon.innerHTML = originalIcon), 1500);
-              } else {
-                pathIcon.innerHTML = "❌";
-                setTimeout(() => (pathIcon.innerHTML = originalIcon), 1500);
-              }
-            });
-          };
-          actionBar.appendChild(pathIcon);
-
-          wrapper.appendChild(actionBar);
-          observer.observe(wrapper);
+          media = document.createElement("img");
+          media.dataset.src = mediaUrl;
+          media.className = "lazy-load";
         }
+
+        media.alt = item.name;
+        media.ondblclick = (e) => {
+          e.stopPropagation();
+          toggleFullscreen(media);
+        };
+
+        wrapper.appendChild(media);
+
+        // --- Actions (Same as before) ---
+
+        // Delete
+        const delBtn = document.createElement("div");
+        delBtn.className = "delete-icon";
+        delBtn.textContent = "🗑️";
+        delBtn.title = "Delete";
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          if (confirm(`Delete ${item.name}?`)) deleteFile(item.path, wrapper);
+        };
+        wrapper.appendChild(delBtn);
+
+        // Action Bar
+        const bar = document.createElement("div");
+        bar.className = "action-bar-left";
+
+        // Save
+        const saveBtn = createActionBtn("💾", "save-icon", "Save", () =>
+          saveFile(item.path, saveBtn),
+        );
+        bar.appendChild(saveBtn);
+
+        // Meta
+        const metaBtn = createActionBtn(
+          "📋",
+          "meta-icon",
+          "Copy Metadata",
+          () => copyMetadata(item.path, null, metaBtn, "📋"),
+        );
+        bar.appendChild(metaBtn);
+
+        // Prompt
+        const promptBtn = createActionBtn(
+          "📝",
+          "prompt-icon",
+          "Copy Prompt",
+          () => copyMetadata(item.path, "prompt_text", promptBtn, "📝"),
+        );
+        bar.appendChild(promptBtn);
+
+        // Path
+        const pathBtn = createActionBtn("🔗", "path-icon", "Copy Path", () =>
+          copyPath(item.fullpath, pathBtn),
+        );
+        bar.appendChild(pathBtn);
+
+        wrapper.appendChild(bar);
 
         // Label
         const label = document.createElement("div");
@@ -447,63 +596,90 @@
         container.appendChild(wrapper);
       }
 
-      function copyMetadata(filepath, key, iconElem, defaultIcon) {
-        iconElem.innerHTML = "⏳";
+      function createActionBtn(icon, extraClass, title, onClick) {
+        const div = document.createElement("div");
+        div.className = `action-btn ${extraClass}`;
+        div.textContent = icon;
+        div.title = title;
+        div.onclick = (e) => {
+          e.stopPropagation();
+          onClick();
+        };
+        return div;
+      }
 
+      // --- API Calls ---
+
+      function deleteFile(path, wrapper) {
+        fetch(`/plucker/delete?filename=${encodeURIComponent(path)}`, {
+          method: "DELETE",
+        }).then((res) => {
+          if (res.ok) wrapper.remove();
+          else alert("Error deleting");
+        });
+      }
+
+      function saveFile(path, btn) {
+        btn.textContent = "⏳";
+        fetch(`/plucker/save?filename=${encodeURIComponent(path)}`, {
+          method: "POST",
+        }).then((res) => {
+          btn.textContent = res.ok ? "✅" : "❌";
+          setTimeout(() => (btn.textContent = "💾"), 1500);
+        });
+      }
+
+      function copyPath(fullpath, btn) {
+        btn.textContent = "⏳";
+        copyToClipboard(fullpath).then((ok) => {
+          btn.textContent = ok ? "✅" : "❌";
+          setTimeout(() => (btn.textContent = "🔗"), 1500);
+        });
+      }
+
+      function copyMetadata(filepath, key, btn, originalIcon) {
+        btn.textContent = "⏳";
         let url = `/plucker/metadata?filename=${encodeURIComponent(filepath)}`;
-        if (key) {
-          url += `&key=${key}`;
-        }
+        if (key) url += `&key=${key}`;
 
         fetch(url)
           .then((res) => res.json())
           .then((data) => {
             if (data.metadata) {
-              const textToCopy =
+              const text =
                 typeof data.metadata === "object"
                   ? JSON.stringify(data.metadata, null, 2)
                   : data.metadata;
-
-              copyToClipboard(textToCopy).then((success) => {
-                if (success) {
-                  iconElem.innerHTML = "✅";
-                  setTimeout(() => (iconElem.innerHTML = defaultIcon), 1500);
-                } else {
-                  iconElem.innerHTML = "⚠️";
-                  setTimeout(() => (iconElem.innerHTML = defaultIcon), 1500);
-                }
+              copyToClipboard(text).then((success) => {
+                btn.textContent = success ? "✅" : "⚠️";
+                setTimeout(() => (btn.textContent = originalIcon), 1500);
               });
             } else {
-              console.warn(data.message);
-              iconElem.innerHTML = "🚫";
-              setTimeout(() => (iconElem.innerHTML = defaultIcon), 1500);
+              btn.textContent = "🚫";
+              setTimeout(() => (btn.textContent = originalIcon), 1500);
             }
           })
-          .catch((err) => {
-            console.error("Meta fetch error", err);
-            iconElem.innerHTML = "❌";
+          .catch(() => {
+            btn.textContent = "❌";
+            setTimeout(() => (btn.textContent = originalIcon), 1500);
           });
       }
 
-      function openFolder(path) {
-        currentPath = path;
-        currentPage = 1;
-        loadPage(1);
-      }
-
-      function navigateUp() {
-        if (!currentPath) return;
-        const parts = currentPath.split("/");
-        parts.pop();
-        currentPath = parts.join("/");
-
-        currentPage = 1;
-        loadPage(1);
-      }
-
       function loadPage(displayPageNumber) {
-        const zeroIndexedPage = displayPageNumber - 1;
+        if (!currentPath) return; // Wait for init
 
+        const rootPart = currentPath.split("/")[0];
+        if (
+          rootSelect.value !== rootPart &&
+          availableRoots.some((r) => r.name === rootPart)
+        ) {
+          rootSelect.value = rootPart; // Visual sync only
+        }
+
+        updateBreadcrumbs();
+        gridScroll.scrollTop = 0; // Reset scroll
+
+        const zeroIndexedPage = displayPageNumber - 1;
         const url = `/plucker/media-list?subdir=${encodeURIComponent(currentPath)}&offset=${zeroIndexedPage * pageSize}&limit=${pageSize}`;
 
         fetch(url)
@@ -518,14 +694,7 @@
 
             pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1}`;
 
-            pathDisplay.textContent = currentPath
-              ? `/${currentPath}`
-              : "/ (Root)";
-            upBtn.disabled = !currentPath;
-
-            clearContainer();
-
-            data.items.forEach((item) => createGridItem(item));
+            renderItems(data.items);
           })
           .catch((err) => console.error("Error loading page:", err));
       }
@@ -533,22 +702,18 @@
       function nextPage() {
         if (currentPage < totalPages) loadPage(currentPage + 1);
       }
-
       function prevPage() {
         if (currentPage > 1) loadPage(currentPage - 1);
       }
-
       function firstPage() {
         loadPage(1);
       }
-
       function lastPage() {
         loadPage(totalPages);
       }
 
-      window.onload = () => {
-        loadPage(1);
-      };
+      window.onload = init;
     </script>
   </body>
 </html>
+
