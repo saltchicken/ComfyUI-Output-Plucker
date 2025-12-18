@@ -141,6 +141,18 @@
         border-radius: 6px;
         cursor: pointer;
       }
+
+      .controls select {
+        padding: 10px;
+        font-size: 16px;
+        margin: 0 5px;
+        background: #444;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
       .controls button:disabled,
       .nav-bar button:disabled {
         opacity: 0.5;
@@ -169,6 +181,14 @@
       <span class="page-info" id="page-info">Page 1</span>
       <button onclick="nextPage()">Next ➡</button>
       <button onclick="lastPage()">Last ⏭</button>
+
+
+      <select id="page-size-select" onchange="changePageSize()">
+        <option value="12" selected>12 per page</option>
+        <option value="24">24 per page</option>
+        <option value="48">48 per page</option>
+        <option value="96">96 per page</option>
+      </select>
     </div>
 
     <div id="gif-container"></div>
@@ -180,16 +200,22 @@
       const pathDisplay = document.getElementById("current-path-display");
       const upBtn = document.getElementById("up-btn");
 
-      const pageSize = 12;
+
+      let pageSize = 12;
       let currentPage = 0;
       let totalItems = 0;
       let totalPages = 1;
 
       let currentPath = "";
 
-      // ‼️ CHANGE: Robust Clipboard Copy Function
-      // This attempts the modern API first, then falls back to legacy execCommand
-      // to support non-secure contexts (HTTP on LAN).
+
+      function changePageSize() {
+        const select = document.getElementById("page-size-select");
+        pageSize = parseInt(select.value, 10);
+        currentPage = 1; // Reset to first page to avoid out-of-bounds errors
+        loadPage(1);
+      }
+
       async function copyToClipboard(text) {
         // 1. Try modern Clipboard API (Works on localhost/HTTPS)
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -387,7 +413,6 @@
           pathIcon.innerHTML = "🔗";
           pathIcon.title = "Copy full file path";
 
-          // ‼️ CHANGE: Updated Path Click Handler to use new copy helper
           pathIcon.onclick = (e) => {
             e.stopPropagation();
             const originalIcon = "🔗";
@@ -435,7 +460,6 @@
                   ? JSON.stringify(data.metadata, null, 2)
                   : data.metadata;
 
-              // ‼️ CHANGE: Use new copy helper
               copyToClipboard(textToCopy).then((success) => {
                 if (success) {
                   iconElem.innerHTML = "✅";
