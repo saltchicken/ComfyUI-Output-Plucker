@@ -19,7 +19,7 @@
         height: 100%;
         width: 100%;
       }
-      /* ... existing styles ... */
+
       .sidebar {
         width: 240px;
         background-color: #252525;
@@ -152,7 +152,6 @@
         /* Grid layout for images */
         display: flex;
         flex-wrap: wrap;
-
 
         --grid-gap: 15px;
         --grid-cols: 3;
@@ -318,9 +317,8 @@
               style="width: 1px; height: 20px; background: #444; margin: 0 5px"
             ></div>
 
-
-            <span style="font-size: 12px; color: #888">Cols:</span>
-            <select id="col-count-select" onchange="updateGridColumns()">
+            <span style="font-size: 12px; color: #888">Grid:</span>
+            <select id="col-count-select" onchange="updateGridSettings()">
               <option value="1">1</option>
               <option value="2">2</option>
               <option value="3" selected>3</option>
@@ -328,6 +326,18 @@
               <option value="5">5</option>
               <option value="6">6</option>
               <option value="8">8</option>
+            </select>
+            <span style="font-size: 12px; color: #888">x</span>
+            <select id="row-count-select" onchange="updateGridSettings()">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4" selected>4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="8">8</option>
+              <option value="10">10</option>
+              <option value="12">12</option>
             </select>
 
             <div
@@ -339,17 +349,6 @@
             <span class="page-info" id="page-info">1 / 1</span>
             <button onclick="nextPage()">➡</button>
             <button onclick="lastPage()">⏭</button>
-
-            <select id="page-size-select" onchange="changePageSize()">
-              <option value="4">4</option>
-              <option value="6">6</option>
-              <option value="8">8</option>
-              <option value="10">10</option>
-              <option value="12" selected>12</option>
-              <option value="24">24</option>
-              <option value="48">48</option>
-              <option value="96">96</option>
-            </select>
           </div>
         </div>
 
@@ -369,8 +368,9 @@
 
       const collectionSelect = document.getElementById("collection-select");
 
-
       const colCountSelect = document.getElementById("col-count-select");
+
+      const rowCountSelect = document.getElementById("row-count-select");
 
       let pageSize = 12;
       let currentPage = 1;
@@ -382,12 +382,17 @@
 
       async function init() {
         try {
-
           const savedCols = localStorage.getItem("plucker_columns");
           if (savedCols) {
             colCountSelect.value = savedCols;
-            updateGridColumns();
           }
+
+          const savedRows = localStorage.getItem("plucker_rows");
+          if (savedRows) {
+            rowCountSelect.value = savedRows;
+          }
+
+          updateGridSettings(false);
 
           const res = await fetch(
             `/plucker/media-list?subdir=&offset=0&limit=100`,
@@ -421,11 +426,24 @@
         }
       }
 
+      function updateGridSettings(shouldReload = true) {
+        const cols = parseInt(colCountSelect.value, 10);
+        const rows = parseInt(rowCountSelect.value, 10);
 
-      function updateGridColumns() {
-        const cols = colCountSelect.value;
+        // Update CSS variable for grid layout
         container.style.setProperty("--grid-cols", cols);
+
+        // Calculate page size dynamically
+        pageSize = cols * rows;
+
+        // Save preferences
         localStorage.setItem("plucker_columns", cols);
+        localStorage.setItem("plucker_rows", rows);
+
+        if (shouldReload) {
+          currentPage = 1;
+          loadPage(1);
+        }
       }
 
       async function loadCollections(selectValue = "") {
@@ -497,13 +515,6 @@
 
       function isRoot(path) {
         return availableRoots.some((r) => r.path === path);
-      }
-
-      function changePageSize() {
-        const select = document.getElementById("page-size-select");
-        pageSize = parseInt(select.value, 10);
-        currentPage = 1;
-        loadPage(1);
       }
 
       async function copyToClipboard(text) {

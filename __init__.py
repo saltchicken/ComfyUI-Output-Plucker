@@ -93,9 +93,8 @@ async def media_list(request):
             )
         # Sort roots alphabetically
         items.sort(key=lambda x: x["name"])
-        return web.json_response(
-            {"total": len(items), "items": items, "current_path": ""}
-        )
+
+        return web.json_response({"total": 0, "items": items, "current_path": ""})
 
     root_name, target_dir = parse_virtual_path(subdir)
 
@@ -143,13 +142,22 @@ async def media_list(request):
                     }
                 )
 
-        items.sort(key=lambda x: (x["type"] != "dir", x["name"].lower()))
+        dirs = [x for x in items if x["type"] == "dir"]
+        files = [x for x in items if x["type"] != "dir"]
 
-        total = len(items)
-        paginated_items = items[offset : offset + limit]
+        # Sort independently
+        dirs.sort(key=lambda x: x["name"].lower())
+        files.sort(key=lambda x: x["name"].lower())  # Default sort by name
+
+        total_files = len(files)
+
+        paginated_files = files[offset : offset + limit]
+
+        # This ensures the sidebar always has folders, and the grid has exactly 'limit' images
+        result_items = dirs + paginated_files
 
         return web.json_response(
-            {"total": total, "items": paginated_items, "current_path": subdir}
+            {"total": total_files, "items": result_items, "current_path": subdir}
         )
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
@@ -168,6 +176,16 @@ async def delete_file(request):
     try:
         if os.path.exists(safe_path):
             os.remove(safe_path)
+
+            # Check for potential paired files (e.g. .png + .json or .png + .txt)
+            # Simple heuristic for ComfyUI: delete matching .json metadata if it exists
+            # (Though often metadata is embedded, sidecars exist)
+            base, ext = os.path.splitext(safe_path)
+            if ext.lower() == ".png":
+                # Maybe there is a .gif preview?
+                gif_path = base + ".gif"
+                if os.path.exists(gif_path):
+                    os.remove(gif_path)
 
         return web.json_response({"message": f"{filename} deleted"})
     except FileNotFoundError:
@@ -238,30 +256,45 @@ async def save_file(request):
 
     # regardless of whether source came from Input or Output
 
-    saved_dir = get_saved_root()
+
+    saved_root = get_saved_root()
+    saved_root_abs = os.path.abspath(saved_root)
+
+    dest_dir = saved_root
 
     if collection:
         # Basic directory traversal protection for collection name
         safe_collection = os.path.basename(collection)
-        saved_dir = os.path.join(saved_dir, safe_collection)
+        dest_dir = os.path.join(dest_dir, safe_collection)
 
-    os.makedirs(saved_dir, exist_ok=True)
+    os.makedirs(dest_dir, exist_ok=True)
 
     base_name = os.path.basename(filename)
-    dest_path = os.path.join(saved_dir, base_name)
+    dest_path = os.path.join(dest_dir, base_name)
 
     counter = 1
     name, ext = os.path.splitext(base_name)
     while os.path.exists(dest_path):
-        dest_path = os.path.join(saved_dir, f"{name}_{counter}{ext}")
+        dest_path = os.path.join(dest_dir, f"{name}_{counter}{ext}")
         counter += 1
+
+
 
     try:
 
         shutil.move(source_path, dest_path)
 
+
+        if ext.lower() == ".png":
+            source_gif = os.path.splitext(source_path)[0] + ".gif"
+            if os.path.exists(source_gif):
+                dest_gif = os.path.splitext(dest_path)[0] + ".gif"
+                shutil.move(source_gif, dest_gif)
+
+        action = "Moved"
+
         return web.json_response(
-            {"message": f"Saved to {os.path.relpath(dest_path, OUTPUT_DIR)}"}
+            {"message": f"{action} to {os.path.relpath(dest_path, OUTPUT_DIR)}"}
         )
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
