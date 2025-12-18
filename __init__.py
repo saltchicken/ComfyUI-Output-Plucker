@@ -257,7 +257,7 @@ async def save_file(request):
         counter += 1
 
     try:
-        # ‼️ CHANGED: Switched from copy2 to move to delete original after saving
+
         shutil.move(source_path, dest_path)
 
         return web.json_response(

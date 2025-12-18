@@ -19,7 +19,7 @@
         height: 100%;
         width: 100%;
       }
-
+      /* ... existing styles ... */
       .sidebar {
         width: 240px;
         background-color: #252525;
@@ -131,7 +131,6 @@
         cursor: pointer;
       }
 
-
       #collection-select {
         background-color: #2c3e50;
         border: 1px solid #34495e;
@@ -153,14 +152,24 @@
         /* Grid layout for images */
         display: flex;
         flex-wrap: wrap;
-        gap: 15px;
+
+
+        --grid-gap: 15px;
+        --grid-cols: 3;
+
+        gap: var(--grid-gap);
         align-content: flex-start;
       }
 
       .gif-wrapper {
         position: relative;
-        width: calc(33.33% - 10px); /* Responsive 3 column */
-        min-width: 250px;
+
+        width: calc(
+          (100% - (var(--grid-cols) - 1) * var(--grid-gap)) / var(--grid-cols)
+        );
+
+        min-width: 0;
+
         background: #2a2a2a;
         border-radius: 8px;
         overflow: hidden;
@@ -299,11 +308,26 @@
           </div>
 
           <div class="controls">
-
             <span style="font-size: 12px; color: #888">Save to:</span>
             <select id="collection-select" onchange="handleCollectionChange()">
               <option value="">(Default)</option>
               <option value="__NEW__">➕ Create New...</option>
+            </select>
+
+            <div
+              style="width: 1px; height: 20px; background: #444; margin: 0 5px"
+            ></div>
+
+
+            <span style="font-size: 12px; color: #888">Cols:</span>
+            <select id="col-count-select" onchange="updateGridColumns()">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3" selected>3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="8">8</option>
             </select>
 
             <div
@@ -345,6 +369,9 @@
 
       const collectionSelect = document.getElementById("collection-select");
 
+
+      const colCountSelect = document.getElementById("col-count-select");
+
       let pageSize = 12;
       let currentPage = 1;
       let totalItems = 0;
@@ -355,6 +382,13 @@
 
       async function init() {
         try {
+
+          const savedCols = localStorage.getItem("plucker_columns");
+          if (savedCols) {
+            colCountSelect.value = savedCols;
+            updateGridColumns();
+          }
+
           const res = await fetch(
             `/plucker/media-list?subdir=&offset=0&limit=100`,
           );
@@ -381,13 +415,18 @@
             loadPage(1);
           }
 
-
           loadCollections();
         } catch (e) {
           console.error("Failed to init roots", e);
         }
       }
 
+
+      function updateGridColumns() {
+        const cols = colCountSelect.value;
+        container.style.setProperty("--grid-cols", cols);
+        localStorage.setItem("plucker_columns", cols);
+      }
 
       async function loadCollections(selectValue = "") {
         try {
@@ -421,7 +460,6 @@
           console.error("Failed to load collections", e);
         }
       }
-
 
       async function handleCollectionChange() {
         const val = collectionSelect.value;
@@ -706,7 +744,6 @@
       }
 
       function saveFile(path, btn, wrapper) {
-
         const collection = collectionSelect.value;
         let url = `/plucker/save?filename=${encodeURIComponent(path)}`;
         if (collection && collection !== "__NEW__") {
