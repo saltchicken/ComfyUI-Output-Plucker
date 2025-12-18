@@ -131,6 +131,13 @@
         cursor: pointer;
       }
 
+
+      #collection-select {
+        background-color: #2c3e50;
+        border: 1px solid #34495e;
+        min-width: 120px;
+      }
+
       .controls button:disabled {
         opacity: 0.5;
         cursor: default;
@@ -292,6 +299,17 @@
           </div>
 
           <div class="controls">
+
+            <span style="font-size: 12px; color: #888">Save to:</span>
+            <select id="collection-select" onchange="handleCollectionChange()">
+              <option value="">(Default)</option>
+              <option value="__NEW__">➕ Create New...</option>
+            </select>
+
+            <div
+              style="width: 1px; height: 20px; background: #444; margin: 0 5px"
+            ></div>
+
             <button onclick="firstPage()">⏮</button>
             <button onclick="prevPage()">⬅</button>
             <span class="page-info" id="page-info">1 / 1</span>
@@ -324,6 +342,8 @@
       const breadcrumbsContainer = document.getElementById("breadcrumbs");
       const pageInfo = document.getElementById("page-info");
       const gridScroll = document.getElementById("grid-scroll");
+
+      const collectionSelect = document.getElementById("collection-select");
 
       let pageSize = 12;
       let currentPage = 1;
@@ -360,8 +380,74 @@
             currentPath = defaultRoot.path;
             loadPage(1);
           }
+
+
+          loadCollections();
         } catch (e) {
           console.error("Failed to init roots", e);
+        }
+      }
+
+
+      async function loadCollections(selectValue = "") {
+        try {
+          const res = await fetch("/plucker/collections");
+          const data = await res.json();
+
+          // Keep "Default" and "Create New" options
+          collectionSelect.innerHTML = `
+                <option value="">(Default)</option>
+                <option value="__NEW__">➕ Create New...</option>
+             `;
+
+          if (data.collections) {
+            // Insert collections before "Create New"
+            const createOpt = collectionSelect.querySelector(
+              'option[value="__NEW__"]',
+            );
+
+            data.collections.forEach((col) => {
+              const opt = document.createElement("option");
+              opt.value = col;
+              opt.textContent = `📁 ${col}`;
+              collectionSelect.insertBefore(opt, createOpt);
+            });
+          }
+
+          if (selectValue) {
+            collectionSelect.value = selectValue;
+          }
+        } catch (e) {
+          console.error("Failed to load collections", e);
+        }
+      }
+
+
+      async function handleCollectionChange() {
+        const val = collectionSelect.value;
+        if (val === "__NEW__") {
+          const name = prompt("Enter new collection name:");
+          if (name && name.trim()) {
+            try {
+              const res = await fetch("/plucker/collections", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: name.trim() }),
+              });
+              const data = await res.json();
+              if (data.name) {
+                await loadCollections(data.name); // Reload and select new
+              } else {
+                alert(data.error || "Failed to create");
+                collectionSelect.value = "";
+              }
+            } catch (e) {
+              alert("Error creating collection");
+              collectionSelect.value = "";
+            }
+          } else {
+            collectionSelect.value = ""; // Reset if cancelled
+          }
         }
       }
 
@@ -556,11 +642,8 @@
         bar.className = "action-bar-left";
 
         // Save
-        const saveBtn = createActionBtn(
-          "💾",
-          "save-icon",
-          "Save",
-          () => saveFile(item.path, saveBtn, wrapper),
+        const saveBtn = createActionBtn("💾", "save-icon", "Save", () =>
+          saveFile(item.path, saveBtn, wrapper),
         );
         bar.appendChild(saveBtn);
 
@@ -624,12 +707,17 @@
 
       function saveFile(path, btn, wrapper) {
 
+        const collection = collectionSelect.value;
+        let url = `/plucker/save?filename=${encodeURIComponent(path)}`;
+        if (collection && collection !== "__NEW__") {
+          url += `&collection=${encodeURIComponent(collection)}`;
+        }
+
         btn.textContent = "⏳";
-        fetch(`/plucker/save?filename=${encodeURIComponent(path)}`, {
+        fetch(url, {
           method: "POST",
         }).then((res) => {
           if (res.ok) {
-
             if (wrapper) wrapper.remove();
           } else {
             btn.textContent = "❌";

@@ -176,8 +176,57 @@ async def delete_file(request):
         return web.json_response({"error": str(e)}, status=500)
 
 
+def get_saved_root():
+    return os.path.join(OUTPUT_DIR, SAVED_FOLDER_NAME)
+
+
+async def get_collections(request):
+    saved_root = get_saved_root()
+    collections = []
+
+    if os.path.exists(saved_root):
+        try:
+            with os.scandir(saved_root) as entries:
+                for entry in entries:
+                    if entry.is_dir():
+                        collections.append(entry.name)
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
+
+    collections.sort()
+    return web.json_response({"collections": collections})
+
+
+async def create_collection(request):
+    try:
+        data = await request.json()
+        name = data.get("name")
+
+        if not name:
+            return web.json_response({"error": "No name provided"}, status=400)
+
+        # Simple sanitation
+        safe_name = "".join(
+            [c for c in name if c.isalnum() or c in (" ", "-", "_")]
+        ).strip()
+
+        if not safe_name:
+            return web.json_response({"error": "Invalid collection name"}, status=400)
+
+        saved_root = get_saved_root()
+        new_dir = os.path.join(saved_root, safe_name)
+
+        os.makedirs(new_dir, exist_ok=True)
+        return web.json_response({"message": "Created", "name": safe_name})
+
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
 async def save_file(request):
     filename = request.rel_url.query.get("filename")
+
+    collection = request.rel_url.query.get("collection", "")
 
     root_name, source_path = parse_virtual_path(filename)
 
@@ -188,7 +237,14 @@ async def save_file(request):
         return web.json_response({"error": "File not found"}, status=404)
 
     # regardless of whether source came from Input or Output
-    saved_dir = os.path.join(OUTPUT_DIR, SAVED_FOLDER_NAME)
+
+    saved_dir = get_saved_root()
+
+    if collection:
+        # Basic directory traversal protection for collection name
+        safe_collection = os.path.basename(collection)
+        saved_dir = os.path.join(saved_dir, safe_collection)
+
     os.makedirs(saved_dir, exist_ok=True)
 
     base_name = os.path.basename(filename)
@@ -201,7 +257,7 @@ async def save_file(request):
         counter += 1
 
     try:
-        # Use shutil.move for atomic, safer, and faster operation
+        # ‼️ CHANGED: Switched from copy2 to move to delete original after saving
         shutil.move(source_path, dest_path)
 
         return web.json_response(
@@ -320,5 +376,8 @@ routes.add_delete("/plucker/delete", delete_file)
 routes.add_post("/plucker/save", save_file)
 routes.add_get("/plucker/metadata", get_metadata)
 
-print("‼️ ComfyUI-Output-Plucker Loaded with Input Support!")
 
+routes.add_get("/plucker/collections", get_collections)
+routes.add_post("/plucker/collections", create_collection)
+
+print("‼️ ComfyUI-Output-Plucker Loaded with Input Support!")
