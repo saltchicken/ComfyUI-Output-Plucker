@@ -80,7 +80,6 @@ async def media_list(request):
     offset = int(params.get("offset", 0))
     limit = int(params.get("limit", 20))
 
-
     if not subdir:
         items = []
         for key, val in ROOT_FOLDERS.items():
@@ -97,7 +96,6 @@ async def media_list(request):
         return web.json_response(
             {"total": len(items), "items": items, "current_path": ""}
         )
-
 
     root_name, target_dir = parse_virtual_path(subdir)
 
@@ -120,7 +118,6 @@ async def media_list(request):
 
         # Process entries
         for entry in all_entries:
-
             # Real path relative to the physical root (e.g. "subfolder/image.png")
             rel_real = os.path.relpath(entry.path, ROOT_FOLDERS[root_name])
 
@@ -171,7 +168,6 @@ async def delete_file(request):
     if not filename:
         return web.json_response({"error": "Missing filename"}, status=400)
 
-
     root_name, safe_path = parse_virtual_path(filename)
 
     if not safe_path:
@@ -197,7 +193,6 @@ async def delete_file(request):
 async def save_file(request):
     filename = request.rel_url.query.get("filename")
 
-
     root_name, source_path = parse_virtual_path(filename)
 
     if not source_path:
@@ -205,7 +200,6 @@ async def save_file(request):
 
     if not os.path.exists(source_path):
         return web.json_response({"error": "File not found"}, status=404)
-
 
     # regardless of whether source came from Input or Output
     saved_dir = os.path.join(OUTPUT_DIR, SAVED_FOLDER_NAME)
@@ -221,7 +215,8 @@ async def save_file(request):
         counter += 1
 
     try:
-        shutil.copy2(source_path, dest_path)
+        # ‼️ Changed: Use shutil.move for atomic, safer, and faster operation (renames on same fs)
+        shutil.move(source_path, dest_path)
 
         if filename.lower().endswith((".gif", ".mp4")):
             source_base = os.path.splitext(source_path)[0]
@@ -230,7 +225,8 @@ async def save_file(request):
             if os.path.exists(png_source):
                 dest_base = os.path.splitext(dest_path)[0]
                 dest_png_path = f"{dest_base}.png"
-                shutil.copy2(png_source, dest_png_path)
+                # ‼️ Changed: Use move for paired preview file
+                shutil.move(png_source, dest_png_path)
 
         return web.json_response(
             {"message": f"Saved to {os.path.relpath(dest_path, OUTPUT_DIR)}"}
@@ -242,7 +238,6 @@ async def save_file(request):
 async def get_metadata(request):
     filename = request.rel_url.query.get("filename")
     key = request.rel_url.query.get("key")
-
 
     root_name, safe_path = parse_virtual_path(filename)
 
@@ -340,7 +335,6 @@ async def get_metadata(request):
 
     except Exception as e:
         return web.json_response({"found": False, "message": str(e)})
-
 
 
 routes.add_get("/plucker/view", serve_index)

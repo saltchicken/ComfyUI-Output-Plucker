@@ -556,8 +556,11 @@
         bar.className = "action-bar-left";
 
         // Save
-        const saveBtn = createActionBtn("💾", "save-icon", "Save", () =>
-          saveFile(item.path, saveBtn),
+        const saveBtn = createActionBtn(
+          "💾",
+          "save-icon",
+          "Save",
+          () => saveFile(item.path, saveBtn, wrapper), // ‼️ Changed: Passed wrapper to handle removal
         );
         bar.appendChild(saveBtn);
 
@@ -619,13 +622,19 @@
         });
       }
 
-      function saveFile(path, btn) {
+      function saveFile(path, btn, wrapper) {
+        // ‼️ Changed: added wrapper arg
         btn.textContent = "⏳";
         fetch(`/plucker/save?filename=${encodeURIComponent(path)}`, {
           method: "POST",
         }).then((res) => {
-          btn.textContent = res.ok ? "✅" : "❌";
-          setTimeout(() => (btn.textContent = "💾"), 1500);
+          if (res.ok) {
+            // ‼️ Changed: Remove the card from the UI as it has been moved
+            if (wrapper) wrapper.remove();
+          } else {
+            btn.textContent = "❌";
+            setTimeout(() => (btn.textContent = "💾"), 1500);
+          }
         });
       }
 
@@ -716,4 +725,3 @@
     </script>
   </body>
 </html>
-
