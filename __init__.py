@@ -108,13 +108,10 @@ async def media_list(request):
     try:
         items = []
         all_entries = []
-        mp4_files = set()
 
         with os.scandir(target_dir) as entries:
             for entry in entries:
                 all_entries.append(entry)
-                if entry.is_file() and entry.name.lower().endswith(".mp4"):
-                    mp4_files.add(entry.name)
 
         # Process entries
         for entry in all_entries:
@@ -137,11 +134,6 @@ async def media_list(request):
             elif entry.is_file() and entry.name.lower().endswith(
                 (".gif", ".mp4", ".png", ".jpg", ".jpeg", ".webp")
             ):
-                if entry.name.lower().endswith(".png"):
-                    base_name = os.path.splitext(entry.name)[0]
-                    if f"{base_name}.mp4" in mp4_files:
-                        continue
-
                 items.append(
                     {
                         "type": "file",
@@ -177,12 +169,6 @@ async def delete_file(request):
         if os.path.exists(safe_path):
             os.remove(safe_path)
 
-        if filename.lower().endswith((".gif", ".mp4")):
-            base_path = os.path.splitext(safe_path)[0]
-            png_path = f"{base_path}.png"
-            if os.path.exists(png_path):
-                os.remove(png_path)
-
         return web.json_response({"message": f"{filename} deleted"})
     except FileNotFoundError:
         return web.json_response({"error": "File not found"}, status=404)
@@ -215,18 +201,8 @@ async def save_file(request):
         counter += 1
 
     try:
-        # ‼️ Changed: Use shutil.move for atomic, safer, and faster operation (renames on same fs)
+        # Use shutil.move for atomic, safer, and faster operation
         shutil.move(source_path, dest_path)
-
-        if filename.lower().endswith((".gif", ".mp4")):
-            source_base = os.path.splitext(source_path)[0]
-            png_source = f"{source_base}.png"
-
-            if os.path.exists(png_source):
-                dest_base = os.path.splitext(dest_path)[0]
-                dest_png_path = f"{dest_base}.png"
-                # ‼️ Changed: Use move for paired preview file
-                shutil.move(png_source, dest_png_path)
 
         return web.json_response(
             {"message": f"Saved to {os.path.relpath(dest_path, OUTPUT_DIR)}"}
@@ -245,11 +221,6 @@ async def get_metadata(request):
         return web.json_response({"error": "Invalid file path"}, status=400)
 
     target_path = safe_path
-    if filename.lower().endswith(".mp4"):
-        base_path = os.path.splitext(safe_path)[0]
-        png_path = f"{base_path}.png"
-        if os.path.exists(png_path):
-            target_path = png_path
 
     if not os.path.exists(target_path):
         return web.json_response({"error": "File not found"}, status=404)
@@ -350,3 +321,4 @@ routes.add_post("/plucker/save", save_file)
 routes.add_get("/plucker/metadata", get_metadata)
 
 print("‼️ ComfyUI-Output-Plucker Loaded with Input Support!")
+

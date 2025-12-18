@@ -560,7 +560,7 @@
           "💾",
           "save-icon",
           "Save",
-          () => saveFile(item.path, saveBtn, wrapper), // ‼️ Changed: Passed wrapper to handle removal
+          () => saveFile(item.path, saveBtn, wrapper),
         );
         bar.appendChild(saveBtn);
 
@@ -623,13 +623,13 @@
       }
 
       function saveFile(path, btn, wrapper) {
-        // ‼️ Changed: added wrapper arg
+
         btn.textContent = "⏳";
         fetch(`/plucker/save?filename=${encodeURIComponent(path)}`, {
           method: "POST",
         }).then((res) => {
           if (res.ok) {
-            // ‼️ Changed: Remove the card from the UI as it has been moved
+
             if (wrapper) wrapper.remove();
           } else {
             btn.textContent = "❌";
