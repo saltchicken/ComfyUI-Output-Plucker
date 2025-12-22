@@ -563,7 +563,6 @@
         }
       }
 
-
       async function openFullscreenViewer(index) {
         const allMedia = Array.from(document.querySelectorAll(".media-item"));
 
@@ -598,7 +597,8 @@
         const sourceItem = allMedia[index];
         if (!sourceItem) return;
 
-        const src = sourceItem.dataset.src || sourceItem.src;
+        // ‼️ Changed: use src instead of dataset.src (cache/lazyload removed)
+        const src = sourceItem.src;
         const isVideo = sourceItem.tagName === "VIDEO";
 
         viewer.style.display = "flex";
@@ -620,7 +620,6 @@
           });
         }
       }
-
 
       function updateBreadcrumbs() {
         breadcrumbsContainer.innerHTML = "";
@@ -688,26 +687,10 @@
           createGridItem(fileItem);
         });
 
-        document
-          .querySelectorAll(".lazy-load")
-          .forEach((img) => observer.observe(img));
+        // ‼️ Removed: IntersectionObserver logic
       }
 
-      const observer = new IntersectionObserver(
-        (entries, obs) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const media = entry.target;
-              if (media.dataset.src) {
-                media.src = media.dataset.src;
-                media.classList.remove("lazy-load");
-                obs.unobserve(media);
-              }
-            }
-          });
-        },
-        { root: gridScroll, rootMargin: "0px 0px 200px 0px", threshold: 0.1 },
-      );
+      // ‼️ Removed: IntersectionObserver instance and callback
 
       function createGridItem(item) {
         const wrapper = document.createElement("div");
@@ -718,17 +701,18 @@
         let media;
         const mediaUrl = `/plucker/files/${file}`;
 
+        // ‼️ Changed: Set src immediately, removed 'lazy-load' class
         if (ext === "mp4") {
           media = document.createElement("video");
           media.autoplay = true;
           media.muted = true;
           media.loop = true;
-          media.dataset.src = mediaUrl;
-          media.className = "lazy-load media-item";
+          media.src = mediaUrl; // ‼️ Direct load
+          media.className = "media-item";
         } else {
           media = document.createElement("img");
-          media.dataset.src = mediaUrl;
-          media.className = "lazy-load media-item";
+          media.src = mediaUrl; // ‼️ Direct load
+          media.className = "media-item";
         }
 
         media.alt = item.name;
@@ -864,7 +848,6 @@
           });
       }
 
-
       async function loadPage(displayPageNumber) {
         if (!currentPath) return;
 
@@ -900,7 +883,6 @@
           console.error("Error loading page:", err);
         }
       }
-
 
       function nextPage() {
         if (currentPage < totalPages) loadPage(currentPage + 1);
@@ -953,3 +935,4 @@
     </script>
   </body>
 </html>
+
