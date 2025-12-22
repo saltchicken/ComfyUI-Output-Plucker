@@ -857,6 +857,19 @@
         loadPage(totalPages);
       }
 
+
+      window.addEventListener("keydown", (e) => {
+        // Don't trigger if user is interacting with inputs/selects to avoid changing selection
+        const tag = document.activeElement.tagName;
+        if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+
+        if (e.key === "ArrowLeft") {
+          prevPage();
+        } else if (e.key === "ArrowRight") {
+          nextPage();
+        }
+      });
+
       window.onload = init;
     </script>
   </body>
