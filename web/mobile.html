@@ -59,6 +59,37 @@
         justify-content: center;
       }
 
+      .fs-actions {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 25px;
+        z-index: 100000;
+        background: rgba(40, 40, 40, 0.85);
+        padding: 12px 30px;
+        border-radius: 50px;
+        backdrop-filter: blur(4px);
+        border: 1px solid #444;
+      }
+
+      .fs-action-btn {
+        background: transparent;
+        border: none;
+        font-size: 28px;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+      }
+      .fs-action-btn:active {
+        transform: scale(0.9);
+      }
+
       .app-container {
         display: flex;
         flex-direction: column;
@@ -304,6 +335,13 @@
         muted
         playsinline
       ></video>
+
+      <div class="fs-actions">
+        <button id="fs-save-btn" class="fs-action-btn">💾</button>
+        <button id="fs-del-btn" class="fs-action-btn" style="color: #ff6b6b">
+          🗑️
+        </button>
+      </div>
     </div>
 
     <!-- Sidebar Drawer -->
@@ -349,11 +387,9 @@
 
       <!-- Footer Pagination -->
       <div class="footer-pagination">
-
         <button type="button" class="pag-btn" onclick="window.firstPage()">
           ⏮
         </button>
-
 
         <button type="button" class="pag-btn" onclick="window.prevPage()">
           ⬅
@@ -373,7 +409,6 @@
         <button type="button" class="pag-btn" onclick="window.nextPage()">
           ➡
         </button>
-
 
         <button type="button" class="pag-btn" onclick="window.lastPage()">
           ⏭
@@ -407,10 +442,12 @@
       const viewerImg = document.getElementById("viewer-img");
       const viewerVideo = document.getElementById("viewer-video");
 
+      const fsSaveBtn = document.getElementById("fs-save-btn");
+      const fsDelBtn = document.getElementById("fs-del-btn");
+
       // Touch handling
       let touchStartX = 0;
       let touchEndX = 0;
-
 
       window.nextPage = nextPage;
       window.prevPage = prevPage;
@@ -645,6 +682,8 @@
         }
         media.className = "media-item";
 
+        media.dataset.path = item.path;
+
         media.onclick = () => {
           const allMedia = Array.from(document.querySelectorAll(".media-item"));
           const idx = allMedia.indexOf(media);
@@ -702,7 +741,11 @@
         fetch(`/plucker/delete?filename=${encodeURIComponent(path)}`, {
           method: "DELETE",
         }).then((res) => {
-          if (res.ok) wrapper.remove();
+          if (res.ok) {
+            if (wrapper) wrapper.remove();
+            // If we are deleting from FS viewer, close it
+            if (viewer.style.display !== "none") closeFullscreen();
+          }
         });
       }
 
@@ -716,9 +759,10 @@
         fetch(url, { method: "POST" }).then((res) => {
           if (res.ok) {
             btn.textContent = "✅";
-            // Optional: remove from view if moving? logic in backend implies move
             setTimeout(() => {
               if (wrapper) wrapper.remove();
+              // If saved from FS viewer (file moved), close FS
+              if (viewer.style.display !== "none") closeFullscreen();
             }, 500);
           } else {
             btn.textContent = "❌";
@@ -757,8 +801,25 @@
         const allMedia = Array.from(document.querySelectorAll(".media-item"));
         if (!allMedia[index]) return;
 
-        const src = allMedia[index].src;
-        const isVideo = allMedia[index].tagName === "VIDEO";
+        const currentMedia = allMedia[index];
+        const src = currentMedia.src;
+        const isVideo = currentMedia.tagName === "VIDEO";
+        const path = currentMedia.dataset.path;
+
+        const wrapper = currentMedia.closest(".gif-wrapper");
+
+        fsSaveBtn.textContent = "💾";
+        fsSaveBtn.onclick = (e) => {
+          e.stopPropagation();
+          saveFile(path, fsSaveBtn, wrapper);
+        };
+
+        fsDelBtn.onclick = (e) => {
+          e.stopPropagation();
+          if (confirm("Delete this file?")) {
+            deleteFile(path, wrapper);
+          }
+        };
 
         viewer.style.display = "flex";
         if (isVideo) {
@@ -801,12 +862,21 @@
             }
           } else {
             // Swipe Right -> Prev
-            if (currentViewerIndex > 0)
+
+            if (currentViewerIndex > 0) {
               openFullscreenViewer(currentViewerIndex - 1);
+            } else if (currentPage > 1) {
+              prevPage().then(() => {
+                // Re-query items after page load
+                const newItems = document.querySelectorAll(".media-item");
+                if (newItems.length > 0) {
+                  openFullscreenViewer(newItems.length - 1);
+                }
+              });
+            }
           }
         }
       }
-
 
       function nextPage() {
         console.log(
@@ -824,7 +894,6 @@
         if (currentPage > 1) return loadPage(currentPage - 1);
         return Promise.resolve();
       }
-
 
       function firstPage() {
         console.log("Navigating First");
