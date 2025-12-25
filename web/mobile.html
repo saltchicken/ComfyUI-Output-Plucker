@@ -59,7 +59,6 @@
         justify-content: center;
       }
 
-
       .fs-actions {
         position: absolute;
         bottom: 40px;
@@ -250,25 +249,11 @@
       }
 
       .media-item {
-
         width: 100%;
         height: auto;
         display: block;
         object-fit: cover; /* or contain, but cover usually looks better in grid tiles */
       }
-
-      .file-info {
-        padding: 8px;
-        font-size: 12px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        background: #252525;
-        color: #bbb;
-        border-top: 1px solid #333;
-      }
-
-
 
       /* Pagination Footer */
       .footer-pagination {
@@ -324,7 +309,6 @@
         playsinline
       ></video>
 
-
       <div class="fs-actions">
         <button id="fs-save-btn" class="fs-action-btn">💾</button>
         <button id="fs-del-btn" class="fs-action-btn" style="color: #ff6b6b">
@@ -376,11 +360,9 @@
 
       <!-- Footer Pagination -->
       <div class="footer-pagination">
-
         <button type="button" class="pag-btn" onclick="window.firstPage()">
           ⏮
         </button>
-
 
         <button type="button" class="pag-btn" onclick="window.prevPage()">
           ⬅
@@ -400,7 +382,6 @@
         <button type="button" class="pag-btn" onclick="window.nextPage()">
           ➡
         </button>
-
 
         <button type="button" class="pag-btn" onclick="window.lastPage()">
           ⏭
@@ -440,7 +421,6 @@
       // Touch handling
       let touchStartX = 0;
       let touchEndX = 0;
-
 
       window.nextPage = nextPage;
       window.prevPage = prevPage;
@@ -675,7 +655,6 @@
         }
         media.className = "media-item";
 
-
         media.dataset.path = item.path;
 
         media.onclick = () => {
@@ -687,19 +666,8 @@
         mediaContainer.appendChild(media);
         wrapper.appendChild(mediaContainer);
 
-        // File Info
-        const info = document.createElement("div");
-        info.className = "file-info";
-        info.textContent = item.name;
-        wrapper.appendChild(info);
-
-
-
         container.appendChild(wrapper);
       }
-
-
-
 
       async function handleAfterAction(wrapper) {
         // 1. Remove the element from grid
@@ -743,7 +711,6 @@
         }
       }
 
-
       function deleteFile(path, wrapper) {
         fetch(`/plucker/delete?filename=${encodeURIComponent(path)}`, {
           method: "DELETE",
@@ -753,7 +720,6 @@
           }
         });
       }
-
 
       function saveFile(path, btn, wrapper) {
         const collection = collectionSelect.value;
@@ -810,9 +776,7 @@
         const isVideo = currentMedia.tagName === "VIDEO";
         const path = currentMedia.dataset.path;
 
-
         const wrapper = currentMedia.closest(".gif-wrapper");
-
 
         fsSaveBtn.textContent = "💾";
         fsSaveBtn.onclick = (e) => {
@@ -872,7 +836,6 @@
             if (currentViewerIndex > 0) {
               openFullscreenViewer(currentViewerIndex - 1);
             } else if (currentPage > 1) {
-
               prevPage().then(() => {
                 // Re-query items after page load
                 const newItems = document.querySelectorAll(".media-item");
@@ -884,7 +847,6 @@
           }
         }
       }
-
 
       function nextPage() {
         console.log(
@@ -902,7 +864,6 @@
         if (currentPage > 1) return loadPage(currentPage - 1);
         return Promise.resolve();
       }
-
 
       function firstPage() {
         console.log("Navigating First");
