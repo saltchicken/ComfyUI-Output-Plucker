@@ -59,6 +59,7 @@
         justify-content: center;
       }
 
+
       .fs-actions {
         position: absolute;
         bottom: 40px;
@@ -213,6 +214,7 @@
         display: grid;
         grid-template-columns: repeat(2, 1fr); /* Default mobile */
         gap: 10px;
+        align-items: start;
       }
 
       @media (min-width: 600px) {
@@ -233,22 +235,26 @@
         position: relative;
         display: flex;
         flex-direction: column;
+        border: 1px solid #333;
       }
 
       .media-container {
         position: relative;
         width: 100%;
-        padding-top: 100%; /* Square aspect ratio for uniformity */
+
         background: #000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100px; /* Min height placeholder */
       }
 
       .media-item {
-        position: absolute;
-        top: 0;
-        left: 0;
+
         width: 100%;
-        height: 100%;
-        object-fit: contain;
+        height: auto;
+        display: block;
+        object-fit: cover; /* or contain, but cover usually looks better in grid tiles */
       }
 
       .file-info {
@@ -262,25 +268,7 @@
         border-top: 1px solid #333;
       }
 
-      /* Always visible toolbar for mobile */
-      .mobile-actions {
-        display: flex;
-        justify-content: space-around;
-        background: #333;
-        padding: 8px 0;
-      }
 
-      .action-btn {
-        background: transparent;
-        border: none;
-        color: #ccc;
-        font-size: 18px;
-        padding: 5px 10px;
-      }
-      .action-btn:active {
-        color: white;
-        transform: scale(1.1);
-      }
 
       /* Pagination Footer */
       .footer-pagination {
@@ -336,6 +324,7 @@
         playsinline
       ></video>
 
+
       <div class="fs-actions">
         <button id="fs-save-btn" class="fs-action-btn">💾</button>
         <button id="fs-del-btn" class="fs-action-btn" style="color: #ff6b6b">
@@ -387,9 +376,11 @@
 
       <!-- Footer Pagination -->
       <div class="footer-pagination">
+
         <button type="button" class="pag-btn" onclick="window.firstPage()">
           ⏮
         </button>
+
 
         <button type="button" class="pag-btn" onclick="window.prevPage()">
           ⬅
@@ -409,6 +400,7 @@
         <button type="button" class="pag-btn" onclick="window.nextPage()">
           ➡
         </button>
+
 
         <button type="button" class="pag-btn" onclick="window.lastPage()">
           ⏭
@@ -448,6 +440,7 @@
       // Touch handling
       let touchStartX = 0;
       let touchEndX = 0;
+
 
       window.nextPage = nextPage;
       window.prevPage = prevPage;
@@ -682,6 +675,7 @@
         }
         media.className = "media-item";
 
+
         media.dataset.path = item.path;
 
         media.onclick = () => {
@@ -699,55 +693,67 @@
         info.textContent = item.name;
         wrapper.appendChild(info);
 
-        // Actions Toolbar
-        const actions = document.createElement("div");
-        actions.className = "mobile-actions";
 
-        const saveBtn = createBtn("💾", () =>
-          saveFile(item.path, saveBtn, wrapper),
-        );
-        const metaBtn = createBtn("📋", () =>
-          copyMetadata(item.path, null, metaBtn, "📋"),
-        );
-        const promptBtn = createBtn("📝", () =>
-          copyMetadata(item.path, "prompt_text", promptBtn, "📝"),
-        );
-        const delBtn = createBtn("🗑️", () => {
-          if (confirm("Delete file?")) deleteFile(item.path, wrapper);
-        });
-        delBtn.style.color = "#ff6b6b";
 
-        actions.appendChild(saveBtn);
-        actions.appendChild(metaBtn);
-        actions.appendChild(promptBtn);
-        actions.appendChild(delBtn);
-
-        wrapper.appendChild(actions);
         container.appendChild(wrapper);
       }
 
-      function createBtn(icon, onClick) {
-        const btn = document.createElement("button");
-        btn.className = "action-btn";
-        btn.textContent = icon;
-        btn.onclick = (e) => {
-          e.stopPropagation();
-          onClick();
-        };
-        return btn;
+
+
+
+      async function handleAfterAction(wrapper) {
+        // 1. Remove the element from grid
+        if (wrapper) wrapper.remove();
+
+        // 2. If we are not in fullscreen, we are done
+        if (viewer.style.display === "none") return;
+
+        // 3. Get updated list of media items
+        const allMedia = Array.from(document.querySelectorAll(".media-item"));
+
+        // 4. Determine what to show next
+        if (allMedia.length === 0) {
+          // Page is empty
+          if (currentPage < totalPages) {
+            await nextPage();
+            openFullscreenViewer(0);
+          } else if (currentPage > 1) {
+            await prevPage();
+            const newMedia = document.querySelectorAll(".media-item");
+            if (newMedia.length > 0) openFullscreenViewer(newMedia.length - 1);
+            else closeFullscreen();
+          } else {
+            closeFullscreen();
+          }
+          return;
+        }
+
+        if (currentViewerIndex < allMedia.length) {
+          // There is an item at the current index (it shifted into place)
+          openFullscreenViewer(currentViewerIndex);
+        } else {
+          // We deleted the last item on the page
+          if (currentPage < totalPages) {
+            await nextPage();
+            openFullscreenViewer(0);
+          } else {
+            // No next page, go to previous item
+            openFullscreenViewer(Math.max(0, currentViewerIndex - 1));
+          }
+        }
       }
+
 
       function deleteFile(path, wrapper) {
         fetch(`/plucker/delete?filename=${encodeURIComponent(path)}`, {
           method: "DELETE",
         }).then((res) => {
           if (res.ok) {
-            if (wrapper) wrapper.remove();
-            // If we are deleting from FS viewer, close it
-            if (viewer.style.display !== "none") closeFullscreen();
+            handleAfterAction(wrapper);
           }
         });
       }
+
 
       function saveFile(path, btn, wrapper) {
         const collection = collectionSelect.value;
@@ -760,9 +766,7 @@
           if (res.ok) {
             btn.textContent = "✅";
             setTimeout(() => {
-              if (wrapper) wrapper.remove();
-              // If saved from FS viewer (file moved), close FS
-              if (viewer.style.display !== "none") closeFullscreen();
+              handleAfterAction(wrapper);
             }, 500);
           } else {
             btn.textContent = "❌";
@@ -806,7 +810,9 @@
         const isVideo = currentMedia.tagName === "VIDEO";
         const path = currentMedia.dataset.path;
 
+
         const wrapper = currentMedia.closest(".gif-wrapper");
+
 
         fsSaveBtn.textContent = "💾";
         fsSaveBtn.onclick = (e) => {
@@ -866,6 +872,7 @@
             if (currentViewerIndex > 0) {
               openFullscreenViewer(currentViewerIndex - 1);
             } else if (currentPage > 1) {
+
               prevPage().then(() => {
                 // Re-query items after page load
                 const newItems = document.querySelectorAll(".media-item");
@@ -877,6 +884,7 @@
           }
         }
       }
+
 
       function nextPage() {
         console.log(
@@ -894,6 +902,7 @@
         if (currentPage > 1) return loadPage(currentPage - 1);
         return Promise.resolve();
       }
+
 
       function firstPage() {
         console.log("Navigating First");
