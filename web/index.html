@@ -597,7 +597,7 @@
         const sourceItem = allMedia[index];
         if (!sourceItem) return;
 
-        // ‼️ Changed: use src instead of dataset.src (cache/lazyload removed)
+
         const src = sourceItem.src;
         const isVideo = sourceItem.tagName === "VIDEO";
 
@@ -687,10 +687,10 @@
           createGridItem(fileItem);
         });
 
-        // ‼️ Removed: IntersectionObserver logic
+
       }
 
-      // ‼️ Removed: IntersectionObserver instance and callback
+
 
       function createGridItem(item) {
         const wrapper = document.createElement("div");
@@ -701,17 +701,17 @@
         let media;
         const mediaUrl = `/plucker/files/${file}`;
 
-        // ‼️ Changed: Set src immediately, removed 'lazy-load' class
+
         if (ext === "mp4") {
           media = document.createElement("video");
           media.autoplay = true;
           media.muted = true;
           media.loop = true;
-          media.src = mediaUrl; // ‼️ Direct load
+          media.src = mediaUrl;
           media.className = "media-item";
         } else {
           media = document.createElement("img");
-          media.src = mediaUrl; // ‼️ Direct load
+          media.src = mediaUrl;
           media.className = "media-item";
         }
 
@@ -935,4 +935,3 @@
     </script>
   </body>
 </html>
-

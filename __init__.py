@@ -74,6 +74,12 @@ async def serve_index(request):
     return web.FileResponse(file_path)
 
 
+
+async def serve_mobile(request):
+    file_path = os.path.join(os.path.dirname(__file__), "web/mobile.html")
+    return web.FileResponse(file_path)
+
+
 async def media_list(request):
     params = request.rel_url.query
     subdir = params.get("subdir", "")
@@ -256,7 +262,6 @@ async def save_file(request):
 
     # regardless of whether source came from Input or Output
 
-
     saved_root = get_saved_root()
     saved_root_abs = os.path.abspath(saved_root)
 
@@ -278,12 +283,8 @@ async def save_file(request):
         dest_path = os.path.join(dest_dir, f"{name}_{counter}{ext}")
         counter += 1
 
-
-
     try:
-
         shutil.move(source_path, dest_path)
-
 
         if ext.lower() == ".png":
             source_gif = os.path.splitext(source_path)[0] + ".gif"
@@ -398,6 +399,9 @@ async def get_metadata(request):
 
 
 routes.add_get("/plucker/view", serve_index)
+
+
+routes.add_get("/plucker/mobile", serve_mobile)
 
 
 # Frontend requests /plucker/files/Output/... or /plucker/files/Input/...
