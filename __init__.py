@@ -74,7 +74,6 @@ async def serve_index(request):
     return web.FileResponse(file_path)
 
 
-
 async def serve_mobile(request):
     file_path = os.path.join(os.path.dirname(__file__), "web/mobile.html")
     return web.FileResponse(file_path)
@@ -153,7 +152,9 @@ async def media_list(request):
 
         # Sort independently
         dirs.sort(key=lambda x: x["name"].lower())
-        files.sort(key=lambda x: x["name"].lower())  # Default sort by name
+        files.sort(
+            key=lambda x: x["name"].lower(), reverse=True
+        )  # Default sort by name
 
         total_files = len(files)
 
@@ -417,4 +418,5 @@ routes.add_get("/plucker/metadata", get_metadata)
 routes.add_get("/plucker/collections", get_collections)
 routes.add_post("/plucker/collections", create_collection)
 
-print("‼️ ComfyUI-Output-Plucker Loaded with Input Support!")
+print("ComfyUI-Output-Plucker Loaded with Input Support!")
+
